@@ -1,7 +1,10 @@
 ﻿
 import sys
 import pygame
+import options 
+import map
 
+"""
 #Render text
 # Renders text to the screen with a lot of customisation to choose from:
 # (required) font:          the font to use
@@ -44,7 +47,7 @@ def render_text(font, text, color_rgb, x = None, y = None, offsetx = 0, offsety 
     # Renders the text to screen
     win.blit(renderfont, (x + offsetx, y + offsety))
 
-
+    """
 
 
 
@@ -87,18 +90,22 @@ if pygame_modules_have_loaded():
         pygame.display.update()
 
    
-
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+    #
+    #           LAD VÆR MED AT RØR DET NEDEN UNDER!!!
+    #
+    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
     def main():
         declare_globals()
         prepare_test()
 
         while True:
             for event in pygame.event.get():
-                if event.type == QUIT:
+                if event.type == quit:
                     pygame.quit()
                     sys.exit()
 
-                if event.type == KEYDOWN:
+                if event.type == pygame.KEYDOWN:
                     key_name = pygame.key.name(event.key)
                     handle_input(key_name)
 
