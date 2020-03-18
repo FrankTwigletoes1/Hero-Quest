@@ -1,4 +1,4 @@
-
+﻿
 import sys
 import pygame
 
@@ -48,7 +48,7 @@ def render_text(font, text, color_rgb, x = None, y = None, offsetx = 0, offsety 
 
 
 
-fps = 60.0
+fps = 60
 screenSize = (1000, 1000)
 
 
