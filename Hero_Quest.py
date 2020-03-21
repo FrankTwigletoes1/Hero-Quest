@@ -2,7 +2,11 @@
 import sys
 import pygame
 import options 
-import map
+
+
+fps = 60
+screenSize = (int(1000), int(1000))
+
 
 """
 #Render text
@@ -50,9 +54,91 @@ def render_text(font, text, color_rgb, x = None, y = None, offsetx = 0, offsety 
     """
 
 
+   
+class Road():
+    def __init__(self,x,y):
+        
+        super().__init__()
 
-fps = 60
-screenSize = (1000, 1000)
+        self.image = pygame.image.load("sprites/road.png").convert()
+
+
+        game_screen.blit(self.image, (x,y))
+        
+
+class Wall(pygame.sprite.Sprite):
+    def __init__(self,x,y):
+        
+        super().__init__()
+
+        self.image = pygame.image.load("sprites/wall.png").convert()
+
+        game_screen.blit(self.image, (x,y))
+
+
+        
+        
+
+class door():
+    def __init__(self):
+        return None
+
+
+class chest():
+    def __init__(self):
+        return None
+
+
+
+class trap():
+    def __init__(self):
+        return None
+
+
+class player1():
+    def __init__(self):
+        return None
+
+
+class player2():
+    def __init__(self):
+        return None
+
+
+class orc():
+    def __init__(self):
+        return None
+
+
+
+
+class map():
+    def read(file):
+        mapchars = []
+        with open(file, "r") as f:
+            for line in f:
+                for each in line.rstrip("\n"):
+                    if each != " ":
+                        mapchars.append(each)
+        return mapchars
+
+    def assignblocks():
+        char = map.read("map.txt")
+        i = 0
+        for y in range(15):
+            for x in range(20):
+                if char[i] == "r":
+                    Road(x*50,y*50)
+                    i += 1
+                elif char[i] == "w":
+                    Wall(x*50,y*50)
+                    i += 1
+                    
+
+
+
+
+
 
 
 def pygame_modules_have_loaded():
@@ -68,7 +154,7 @@ pygame.init()
 
 if pygame_modules_have_loaded():
     game_screen = pygame.display.set_mode(screenSize)
-    pygame.display.set_caption('Test')
+    pygame.display.set_caption('Hero Quest Digital')
     clock = pygame.time.Clock()
 
     def declare_globals():
@@ -77,6 +163,8 @@ if pygame_modules_have_loaded():
 
     def prepare_test():
         # Kode som skal køre inden game loop
+        map.assignblocks()
+
         pass
 
     def handle_input(key_name):
@@ -87,6 +175,7 @@ if pygame_modules_have_loaded():
         # Kode som køre hver update cyklus
         #  screen for at kunne få adgang til "surface"
         # time sørger for adgang til sidste opdatering af skærm
+ 
         pygame.display.update()
 
    
