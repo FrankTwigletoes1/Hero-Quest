@@ -1,60 +1,17 @@
-﻿
-import sys
+﻿import sys
 import pygame
 import options 
+import os
 
 
 fps = 60
 screenSize = (int(1000), int(1000))
 
 
-"""
-#Render text
-# Renders text to the screen with a lot of customisation to choose from:
-# (required) font:          the font to use
-# (required) text:          the text string that should be drawn on the screen itself
-# (required) colour_rgb:    the text colour, please use either white (255,255,255) or black (0,0,0) for convenience
-# (optional) x:             the horizontal position of the text, none centers the text on screen
-# (optional) y:             the vertical position of the text, none centers the text on screen
-# (optional) offsetx:       how much the text should be moved left or right from its current position
-# (optional) offsety:       how much the text should be moved up or down from its current position
-# (optional) alignment:     how the text should be placed on screen in an easy manner, multiple can be used; left, right, top, bottom
-# (optional) effects:       what effects should be applied to the text, multiple can be used; bold, italic, underline
-# (optional) relative:      makes the text relative to another object in case of defined x and y value
-def render_text(font, text, color_rgb, x = None, y = None, offsetx = 0, offsety = 0, alignment=None, effects=None, relative = False):
+player_sprites = pygame.sprite.Group()
+middle_sprites = pygame.sprite.Group()
+background_sprites = pygame.sprite.Group()
 
-    # Draw effects if any are defined
-    if (effects is not None):
-        if ("bold" in effects):
-            font.set_bold(True)
-        if("italic" in effects):
-            font.set_italic()
-        if("underline" in effects):
-            font.set_underline(True)
-
-    # creates the font object and the x and y coordinates based on the arguments used
-    renderfont = font.render(text, True, color_rgb)
-    x = (win_x / 2 - renderfont.get_width() / 2) if(x is None) else (x - renderfont.get_width() / 2) if(relative) else x # Text horizontal position: center | relative | absolute
-    y = (win_y / 2 - renderfont.get_height() / 2) if (y is None) else (y - renderfont.get_height() / 2) if(relative) else y # Text vertical position: center | relative | absolute
-
-    # Aligns the text if any are defined
-    if(alignment is not None):
-        if("left" in alignment):
-            x = 0
-        elif("right" in alignment):
-            x = win_x - renderfont.get_width()
-        if("top" in alignment):
-            y = 0
-        elif("bottom" in alignment):
-            y = win_y - renderfont.get_height()
-
-    # Renders the text to screen
-    win.blit(renderfont, (x + offsetx, y + offsety))
-
-    """
-
-
-   
 class Road():
     def __init__(self,x,y):
         
@@ -66,7 +23,7 @@ class Road():
         game_screen.blit(self.image, (x,y))
         
 
-class Wall(pygame.sprite.Sprite):
+class Wall():
     def __init__(self,x,y):
         
         super().__init__()
@@ -74,10 +31,7 @@ class Wall(pygame.sprite.Sprite):
         self.image = pygame.image.load("sprites/wall.png").convert()
 
         game_screen.blit(self.image, (x,y))
-
-
-        
-        
+     
 
 class door():
     def __init__(self):
@@ -95,13 +49,27 @@ class trap():
         return None
 
 
-class player1():
+class player1(pygame.sprite.Sprite):
     def __init__(self):
-        return None
+        pygame.sprite.Sprite.__init__(self)
+
+        self.playerUp = pygame.image.load("sprites/player1Up.png")
+        self.image = pygame.image.load("sprites/player1Down.png")
+        self.playerRight = pygame.image.load("sprites/player1Right.png")
+        self.playerLeft = pygame.image.load("sprites/player1Left.png")
+
+        self.image.set_colorkey((69,255,0))
+        
+        self.rect = self.image.get_rect()
 
 
 class player2():
     def __init__(self):
+        self.playerUp = pygame.image.load("")
+        self.playerDown = pygame.image.load("")
+        self.playerRight = pygame.image.load("")
+        self.playerLeft = pygame.image.load("")
+        
         return None
 
 
@@ -114,7 +82,9 @@ class orc():
 
 class map():
     def read(file):
+
         mapchars = []
+
         with open(file, "r") as f:
             for line in f:
                 for each in line.rstrip("\n"):
@@ -124,15 +94,20 @@ class map():
 
     def assignblocks():
         char = map.read("map.txt")
+        
         i = 0
+        
         for y in range(15):
             for x in range(20):
+                
                 if char[i] == "r":
                     Road(x*50,y*50)
                     i += 1
+                
                 elif char[i] == "w":
                     Wall(x*50,y*50)
                     i += 1
+
                     
 
 
@@ -159,23 +134,29 @@ if pygame_modules_have_loaded():
 
     def declare_globals():
         #Alle globale variabler
+
         pass
 
     def prepare_test():
         # Kode som skal køre inden game loop
         map.assignblocks()
+        player = player1()
+        player_sprites.add(player)
 
         pass
 
     def handle_input(key_name):
         # Alt input
+        
         pass
 
     def update(screen, time):
         # Kode som køre hver update cyklus
         #  screen for at kunne få adgang til "surface"
         # time sørger for adgang til sidste opdatering af skærm
- 
+
+
+        front_sprites.draw(game_screen)
         pygame.display.update()
 
    
