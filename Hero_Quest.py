@@ -12,24 +12,30 @@ player_sprites = pygame.sprite.Group()
 middle_sprites = pygame.sprite.Group()
 background_sprites = pygame.sprite.Group()
 
-class Road():
+
+
+class Road(pygame.sprite.Sprite):
     def __init__(self,x,y):
         
-        super().__init__()
+        pygame.sprite.Sprite.__init__(self)
 
         self.image = pygame.image.load("sprites/road.png").convert()
 
-        game_screen.blit(self.image, (x,y))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
         
 
-class Wall():
+class Wall(pygame.sprite.Sprite):
     def __init__(self,x,y):
         
-        super().__init__()
+        pygame.sprite.Sprite.__init__(self)
 
         self.image = pygame.image.load("sprites/wall.png").convert()
 
-        game_screen.blit(self.image, (x,y))
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
      
 
 class door():
@@ -37,9 +43,10 @@ class door():
         return None
 
 
+
 class chest():
     def __init__(self):
-        return None
+        return None    
 
 
 
@@ -49,27 +56,72 @@ class trap():
 
 
 class player1(pygame.sprite.Sprite):
-    def __init__(self):
+    def __init__(self,x,y):
         pygame.sprite.Sprite.__init__(self)
 
-        self.playerUp = pygame.image.load("sprites/player1Up.png")
-        self.image = pygame.image.load("sprites/player1Down.png")
-        self.playerRight = pygame.image.load("sprites/player1Right.png")
-        self.playerLeft = pygame.image.load("sprites/player1Left.png")
 
+        self.image = pygame.image.load("sprites/player1Down.png")
         self.image.set_colorkey((69,255,0))
         
         self.rect = self.image.get_rect()
-
-
-class player2():
-    def __init__(self):
-        self.playerUp = pygame.image.load("")
-        self.playerDown = pygame.image.load("")
-        self.playerRight = pygame.image.load("")
-        self.playerLeft = pygame.image.load("")
+        self.rect.x = x*50
+        self.rect.y = y*50
+    
+    def moveRight(self):
+        Road(self.rect.x,self.rect.y)
         
-        return None
+        self.image = pygame.image.load("sprites/player1Right.png")
+        self.image.set_colorkey((69,255,0))
+
+        if self.rect.x+50 < screenSize[0]:
+            self.rect.x = self.rect.x+50
+            stick = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if stick:
+                print("Collided")
+                self.rect.x = self.rect.x-50
+            middle_sprites.draw(game_screen)
+
+
+    def moveLeft(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Left.png")
+        self.image.set_colorkey((69,255,0))
+        if not self.rect.x-50 < 0:
+            self.rect.x = self.rect.x-50
+            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collsion:
+                print("Collided")
+                self.rect.x = self.rect.x+50
+            middle_sprites.draw(game_screen)
+
+
+    def moveDown(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Down.png")
+        self.image.set_colorkey((69,255,0))
+        if self.rect.y < screenSize[1]-300:
+            self.rect.y = self.rect.y+50
+            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collsion:
+                print("Collided")
+                self.rect.y = self.rect.y-50
+            middle_sprites.draw(game_screen)
+
+
+    def moveUp(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Up.png")
+        self.image.set_colorkey((69,255,0))
+        if self.rect.y > 0:
+            self.rect.y = self.rect.y-50
+            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collsion:
+                print("Collided")
+                self.rect.y = self.rect.y+50    
+            middle_sprites.draw(game_screen)
 
 
 class orc():
@@ -92,6 +144,8 @@ class map():
         return mapchars
 
     def assignblocks():
+        global player
+
         char = map.read("map.txt")
         
         i = 0
@@ -100,13 +154,21 @@ class map():
             for x in range(20):
                 
                 if char[i] == "r":
-                    Road(x*50,y*50)
+                    road = Road(x*50,y*50)
+                    middle_sprites.add(road)
                     i += 1
                 
                 elif char[i] == "w":
-                    Wall(x*50,y*50)
+                    wall = Wall(x*50,y*50)
+                    background_sprites.add(wall)
                     i += 1
-
+                
+                elif char[i] == "p":
+                    road = Road(x*50,y*50)
+                    middle_sprites.add(road)
+                    player = player1(x,y)
+                    player_sprites.add(player)    
+                    i += 1
 
 
 
@@ -130,28 +192,36 @@ if pygame_modules_have_loaded():
 
     def declare_globals():
         #Alle globale variabler
-
         pass
 
     def prepare_test():
         # Kode som skal køre inden game loop
         map.assignblocks()
-        player = player1()
-        player_sprites.add(player)
-
+        background_sprites.draw(game_screen)
+        
         pass
 
     def handle_input(key_name):
-        # Alt input
+        print(key_name)
+        if key_name == "right":
+            player.moveRight()
+        if key_name == "left":
+            player.moveLeft()
+        if key_name == "down":
+            player.moveDown()
+        if key_name == "up":
+            player.moveUp()
         
-        pass
+        if key_name == "escape":
+            pygame.quit()
+            sys.exit(0)
 
     def update(screen, time):
         # Kode som køre hver update cyklus
         #  screen for at kunne få adgang til "surface"
         # time sørger for adgang til sidste opdatering af skærm
 
-
+        middle_sprites.draw(game_screen)
         player_sprites.draw(game_screen)
         pygame.display.update()
 
