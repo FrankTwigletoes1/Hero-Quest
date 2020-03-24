@@ -19,7 +19,6 @@ class Road():
 
         self.image = pygame.image.load("sprites/road.png").convert()
 
-
         game_screen.blit(self.image, (x,y))
         
 
@@ -156,7 +155,7 @@ if pygame_modules_have_loaded():
         # time sørger for adgang til sidste opdatering af skærm
 
 
-        front_sprites.draw(game_screen)
+        player_sprites.draw(game_screen)
         pygame.display.update()
 
    
