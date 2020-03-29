@@ -8,11 +8,12 @@ fps = 60
 screenSize = (int(1000), int(1000))
 
 
+player_steps = 12
 player_sprites = pygame.sprite.Group()
 middle_sprites = pygame.sprite.Group()
 background_sprites = pygame.sprite.Group()
-
-
+entity_sprites = pygame.sprite.Group()
+global player_steps
 
 class Road(pygame.sprite.Sprite):
     def __init__(self,x,y):
@@ -38,19 +39,32 @@ class Wall(pygame.sprite.Sprite):
         self.rect.y = y
      
 
-class door():
-    def __init__(self):
-        return None
+class Door(pygame.sprite.Sprite):
+    def __init__(self, x, y):
+
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image = pygame.image.load("sprites/door.png")
+
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+    def entityUpdate(self):
+        collsion = pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False)
+        if collsion:
+            self.image = pygame.image.load("sprites/open_door.png")
 
 
 
-class chest():
+
+class Chest():
     def __init__(self):
         return None    
 
 
 
-class trap():
+class Trap():
     def __init__(self):
         return None
 
@@ -68,61 +82,71 @@ class player1(pygame.sprite.Sprite):
         self.rect.y = y*50
     
     def moveRight(self):
-        Road(self.rect.x,self.rect.y)
-        
-        self.image = pygame.image.load("sprites/player1Right.png")
-        self.image.set_colorkey((69,255,0))
+        global player_steps
+        if player_steps > 0:
 
-        if self.rect.x+50 < screenSize[0]:
-            self.rect.x = self.rect.x+50
-            stick = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
-            if stick:
-                print("Collided")
-                self.rect.x = self.rect.x-50
-            middle_sprites.draw(game_screen)
+            Road(self.rect.x,self.rect.y)
+            
+            self.image = pygame.image.load("sprites/player1Right.png")
+            self.image.set_colorkey((69,255,0))
+
+            if self.rect.x+50 < screenSize[0]:
+                self.rect.x = self.rect.x+50
+                collision = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
+                    print("Collided")
+                    self.rect.x = self.rect.x-50
+                middle_sprites.draw(game_screen)
+            player_steps -= 1
 
 
     def moveLeft(self):
-        Road(self.rect.x,self.rect.y)
-        
-        self.image = pygame.image.load("sprites/player1Left.png")
-        self.image.set_colorkey((69,255,0))
-        if not self.rect.x-50 < 0:
-            self.rect.x = self.rect.x-50
-            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
-            if collsion:
-                print("Collided")
-                self.rect.x = self.rect.x+50
-            middle_sprites.draw(game_screen)
+        global player_steps
+        if player_steps > 0:
 
+            Road(self.rect.x,self.rect.y)
+            
+            self.image = pygame.image.load("sprites/player1Left.png")
+            self.image.set_colorkey((69,255,0))
+            
+            if not self.rect.x-50 < 0:
+                self.rect.x = self.rect.x-50
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
+                    print("Collided")
+                    self.rect.x = self.rect.x+50
+                middle_sprites.draw(game_screen)
+            player_steps -= 1
 
     def moveDown(self):
-        Road(self.rect.x,self.rect.y)
-        
-        self.image = pygame.image.load("sprites/player1Down.png")
-        self.image.set_colorkey((69,255,0))
-        if self.rect.y < screenSize[1]-300:
-            self.rect.y = self.rect.y+50
-            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
-            if collsion:
-                print("Collided")
-                self.rect.y = self.rect.y-50
-            middle_sprites.draw(game_screen)
+        global player_steps
+        if player_steps > 0:
 
+            Road(self.rect.x,self.rect.y)
+            
+            self.image = pygame.image.load("sprites/player1Down.png")
+            self.image.set_colorkey((69,255,0))
+            if self.rect.y < screenSize[1]-300:
+                self.rect.y = self.rect.y+50
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
+                    print("Collided")
+                    self.rect.y = self.rect.y-50
+                middle_sprites.draw(game_screen)
+            player_steps -= 1
 
     def moveUp(self):
-        Road(self.rect.x,self.rect.y)
-        
-        self.image = pygame.image.load("sprites/player1Up.png")
-        self.image.set_colorkey((69,255,0))
-        if self.rect.y > 0:
-            self.rect.y = self.rect.y-50
-            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
-            if collsion:
-                print("Collided")
-                self.rect.y = self.rect.y+50    
-            middle_sprites.draw(game_screen)
+        if player_steps > 0:
 
+            Road(self.rect.x,self.rect.y)
+            
+            self.image = pygame.image.load("sprites/player1Up.png")
+            self.image.set_colorkey((69,255,0))
+            if self.rect.y > 0:
+                self.rect.y = self.rect.y-50
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
+                    print("Collided")
+                    self.rect.y = self.rect.y+50    
+                middle_sprites.draw(game_screen)
+                player_steps -= 1
 
 class orc():
     def __init__(self):
@@ -132,43 +156,55 @@ class orc():
 
 
 class map():
-    def read(file):
+    def read(self, file):
 
         mapchars = []
+        self.doorNum = 1
 
         with open(file, "r") as f:
             for line in f:
                 for each in line.rstrip("\n"):
                     if each != " ":
                         mapchars.append(each)
+                        if each == "d":
+                            self.doorNum += 1
         return mapchars
 
-    def assignblocks():
+    def assignblocks(self):
         global player
-
-        char = map.read("map.txt")
-        
+        global doorObjs
+        mapRead = map()
+        char = mapRead.read("map.txt")
         i = 0
-        
+        doorObjs = list()
+        doorNum = 0
         for y in range(15):
             for x in range(20):
-                
+                #Road
                 if char[i] == "r":
                     road = Road(x*50,y*50)
                     middle_sprites.add(road)
                     i += 1
-                
+                #Wall
                 elif char[i] == "w":
                     wall = Wall(x*50,y*50)
                     background_sprites.add(wall)
                     i += 1
-                
+                #Door
+                elif char[i] == "d":
+                    doorObjs.append(Door(x*50,y*50))
+                    entity_sprites.add(doorObjs[doorNum])
+                    doorNum += 1
+                    i += 1
+                #player
                 elif char[i] == "p":
                     road = Road(x*50,y*50)
                     middle_sprites.add(road)
                     player = player1(x,y)
                     player_sprites.add(player)    
                     i += 1
+                
+                
 
 
 
@@ -196,9 +232,11 @@ if pygame_modules_have_loaded():
 
     def prepare_test():
         # Kode som skal køre inden game loop
-        map.assignblocks()
+        drawmap = map()
+        drawmap.assignblocks()
         background_sprites.draw(game_screen)
-        
+        middle_sprites.draw(game_screen)
+        entity_sprites.draw(game_screen)
         pass
 
     def handle_input(key_name):
@@ -212,6 +250,11 @@ if pygame_modules_have_loaded():
         if key_name == "up":
             player.moveUp()
         
+
+        #debug output
+        if key_name == "p":
+            print(doorObjs)
+
         if key_name == "escape":
             pygame.quit()
             sys.exit(0)
@@ -220,8 +263,8 @@ if pygame_modules_have_loaded():
         # Kode som køre hver update cyklus
         #  screen for at kunne få adgang til "surface"
         # time sørger for adgang til sidste opdatering af skærm
-
-        middle_sprites.draw(game_screen)
+        #door.entityUpdate()
+        entity_sprites.draw(game_screen)
         player_sprites.draw(game_screen)
         pygame.display.update()
 

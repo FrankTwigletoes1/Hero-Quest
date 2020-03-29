@@ -1,3 +1,4 @@
+from enum import Enum
 
 #Render text
 # Renders text to the screen with a lot of customisation to choose from:
@@ -41,6 +42,17 @@ def render_text(font, text, color_rgb, x = None, y = None, offsetx = 0, offsety 
     # Renders the text to screen
     win.blit(renderfont, (x + offsetx, y + offsety))
 
+
+self.font_h1 = pygame.font.SysFont('comicsans', 100) # All of the different types of font objects and sizes available
+self.font_h2 = pygame.font.SysFont('comicsans', 80)
+self.font_h3 = pygame.font.SysFont('comicsans', 60)
+self.font_h4 = pygame.font.SysFont('comicsans', 40)
+self.font_h5 = pygame.font.SysFont('comicsans', 20)
+self.font_p1 = pygame.font.SysFont('Roboto', 100)
+self.font_p2 = pygame.font.SysFont('Roboto', 80)
+self.font_p3 = pygame.font.SysFont('Roboto', 60)
+self.font_p4 = pygame.font.SysFont('Roboto', 40)
+self.font_p5 = pygame.font.SysFont('Roboto', 20)
 
 # Player Test
 
@@ -124,6 +136,113 @@ class Player(pygame.sprite.Sprite):
 all_sprites = pygame.sprite.Group()
 player1 = Player(0,0)
 all_sprites.add(player1)
+
+class DIRECTION(Enum):
+    UP = 0
+    RIGHT = 1
+    DOWN = 2
+    LEFT = 3
+
+class entity(pygame.sprite.Sprite):
+    def __init__(self, x, y, colour, image):
+        pygame.sprite.Sprite.__init__(self)
+
+        self.image = pygame.image.load(image)
+        self.image.set_colorkey(colour)
+        self.colour = colour
+        self.rect = self.image.get_rect()
+        self.rect.x = x
+        self.rect.y = y
+
+
+class player1(entity):
+    def __init__(self,x,y):
+        entity.__init__(x*50, y*50, (69,255,0), "sprites/player1Down.png")
+    
+    def move(self, move_direction):
+        Road(self.rect.x,self.rect.y)
+
+        if(move_direction == DIRECTION.UP and self.rect.y > 0):
+            self.rect.y = self.rect.y-50
+            self.simage = "sprites/player1Up.png"
+
+        elif(move_direction == DIRECTION.RIGHT and (self.rect.x+50) < screenSize[0]):
+            self.rect.x = self.rect.x+50
+            self.simage = "sprites/player1Right.png"
+
+        elif(move_direction == DIRECTION.DOWN and self.rect.y < (screenSize[1]-300)):
+            self.rect.y = self.rect.y+50
+            self.simage = "sprites/player1Down.png"
+
+        elif(move_direction == DIRECTION.LEFT and not (self.rect.x-50) < 0):
+            self.rect.x = self.rect.x-50
+            self.simage = "sprites/player1Left.png"
+
+    self.image = pygame.image.load(self.simage)
+    self.image.set_colorkey(self.colour)
+
+    if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
+        self.rect.x = self.rect.x-50
+        middle_sprites.draw(game_screen)
+
+    
+    def moveRight(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Right.png")
+        self.image.set_colorkey((69,255,0))
+
+        if self.rect.x+50 < screenSize[0]:
+            self.rect.x = self.rect.x+50
+            collision = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collision:
+                print("Collided")
+                self.rect.x = self.rect.x-50
+            middle_sprites.draw(game_screen)
+
+
+    def moveLeft(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Left.png")
+        self.image.set_colorkey((69,255,0))
+        
+        if not self.rect.x-50 < 0:
+            self.rect.x = self.rect.x-50
+            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collsion:
+                print("Collided")
+                self.rect.x = self.rect.x+50
+            middle_sprites.draw(game_screen)
+
+
+    def moveDown(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Down.png")
+        self.image.set_colorkey((69,255,0))
+        if self.rect.y < screenSize[1]-300:
+            self.rect.y = self.rect.y+50
+            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collsion:
+                print("Collided")
+                self.rect.y = self.rect.y-50
+            middle_sprites.draw(game_screen)
+
+
+    def moveUp(self):
+        Road(self.rect.x,self.rect.y)
+        
+        self.image = pygame.image.load("sprites/player1Up.png")
+        self.image.set_colorkey((69,255,0))
+        if self.rect.y > 0:
+            self.rect.y = self.rect.y-50
+            collsion = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
+            if collsion:
+                print("Collided")
+                self.rect.y = self.rect.y+50    
+            middle_sprites.draw(game_screen)
+
 
 #Game loop
 loop = True
