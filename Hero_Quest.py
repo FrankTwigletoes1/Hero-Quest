@@ -69,7 +69,7 @@ class Trap():
         return None
 
 
-class player1(pygame.sprite.Sprite):
+class Player1(pygame.sprite.Sprite):
     def __init__(self,x,y):
         pygame.sprite.Sprite.__init__(self)
 
@@ -80,73 +80,49 @@ class player1(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x*50
         self.rect.y = y*50
+
+
     
-    def moveRight(self):
+    def move(self, direction):
+        self.bImage = pygame.image.load("sprites/player1Down.png")
         global player_steps
         if player_steps > 0:
-
-            Road(self.rect.x,self.rect.y)
             
-            self.image = pygame.image.load("sprites/player1Right.png")
-            self.image.set_colorkey((69,255,0))
-
-            if self.rect.x+50 < screenSize[0]:
+            if direction == "right" and self.rect.x+50 < screenSize[0]:
+                self.bImage = pygame.image.load("sprites/player1Right.png")
                 self.rect.x = self.rect.x+50
-                collision = pygame.sprite.groupcollide(player_sprites, background_sprites, False, False)
                 if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
                     print("Collided")
                     self.rect.x = self.rect.x-50
-                middle_sprites.draw(game_screen)
-            player_steps -= 1
-
-
-    def moveLeft(self):
-        global player_steps
-        if player_steps > 0:
-
-            Road(self.rect.x,self.rect.y)
             
-            self.image = pygame.image.load("sprites/player1Left.png")
-            self.image.set_colorkey((69,255,0))
-            
-            if not self.rect.x-50 < 0:
+            elif direction == "left" and not self.rect.x-50 < 0:
+                self.bImage = pygame.image.load("sprites/player1Left.png")
                 self.rect.x = self.rect.x-50
                 if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
                     print("Collided")
                     self.rect.x = self.rect.x+50
-                middle_sprites.draw(game_screen)
-            player_steps -= 1
 
-    def moveDown(self):
-        global player_steps
-        if player_steps > 0:
-
-            Road(self.rect.x,self.rect.y)
             
-            self.image = pygame.image.load("sprites/player1Down.png")
-            self.image.set_colorkey((69,255,0))
-            if self.rect.y < screenSize[1]-300:
+            elif direction == "up" and not self.rect.y-50 < 0 :
+                self.bImage = pygame.image.load("sprites/player1Up.png")
+                self.rect.y = self.rect.y-50
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
+                    print("Collided")
+                    self.rect.y = self.rect.y+50
+            
+            elif direction == "down" and not self.rect.y-50 > screenSize[1]-400:
+                self.bImage = pygame.image.load("sprites/player1Down.png")
                 self.rect.y = self.rect.y+50
                 if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
                     print("Collided")
                     self.rect.y = self.rect.y-50
-                middle_sprites.draw(game_screen)
-            player_steps -= 1
+                    
 
-    def moveUp(self):
-        if player_steps > 0:
-
-            Road(self.rect.x,self.rect.y)
             
-            self.image = pygame.image.load("sprites/player1Up.png")
-            self.image.set_colorkey((69,255,0))
-            if self.rect.y > 0:
-                self.rect.y = self.rect.y-50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False):
-                    print("Collided")
-                    self.rect.y = self.rect.y+50    
-                middle_sprites.draw(game_screen)
-                player_steps -= 1
+            self.image = self.bImage
+            self.image.set_colorkey((69,255,0))      
+            middle_sprites.draw(game_screen)
+
 
 class orc():
     def __init__(self):
@@ -200,7 +176,7 @@ class map():
                 elif char[i] == "p":
                     road = Road(x*50,y*50)
                     middle_sprites.add(road)
-                    player = player1(x,y)
+                    player = Player1(x,y)
                     player_sprites.add(player)    
                     i += 1
                 
@@ -241,14 +217,8 @@ if pygame_modules_have_loaded():
 
     def handle_input(key_name):
         print(key_name)
-        if key_name == "right":
-            player.moveRight()
-        if key_name == "left":
-            player.moveLeft()
-        if key_name == "down":
-            player.moveDown()
-        if key_name == "up":
-            player.moveUp()
+        if key_name == "right" or "left" or "up" or "down":
+            player.move(key_name)
         
 
         #debug output
