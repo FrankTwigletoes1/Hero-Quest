@@ -12,7 +12,12 @@ r w r r w r r r d r w r r r w r r r w r
 r w r r d r r r w r w r r r w w w d w r
 r w r r w r r r w r w r r r w r r r w r
 r w w w w w w w w r w w w w w w w w w r
-r r r r r r r r r r r r r r r r r r r r 
+r r r r r r r r r r r r r r r r r r r r
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b b b b 
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b b b b
 
 w w w w w w w w w w w w w w w w w w w w
 w p r r r r r r r r r r r r r r r r r w 
@@ -29,6 +34,10 @@ w r r r w r w r r r w r w r r r r w r w
 w w w w w r w w w w w w w w w w w w r w 
 w r r r r r r r r r r r r r r r r r r w 
 w w w w w w w w w w w w w w w w w w w w 
-
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b b b b 
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b b b b
 
 
