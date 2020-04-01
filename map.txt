@@ -1,3 +1,4 @@
+
 p r r r r r r r r r r r r r r r r r r r
 r w w w w w w w w w r w w w w w w w w r
 r w r r r w r r r w r d r r r w r r w r
@@ -19,25 +20,27 @@ b b b b b b b b b b b b b b b b b b b b
 b b b b b b b b b b b b b b b b b b b b
 b b b b b b b b b b b b b b b b b b b b
 
-w w w w w w w w w w w w w w w w w w w w
-w p r r r r r r r r r r r r r r r r r w 
-w r w d w r w w r w w r w w w w r r r w 
-w r r r w r w r r w r r w r r w r r r w 
-w r r r w r w r r w r r w r r w r r r w 
-w r r r w r w w w w r r w r r w r r r w 
-w w w w w r r r r w w w w r w w r r r w 
-w r r r w r w w d w w r r r r r r r r w 
-w r r r w r w r r r w r w w w w r w r w 
-w r r r r r w r r r w r w r r r r w r w 
-w r r r w r w r r r r r w r r r r w r w 
-w r r r w r w r r r w r w r r r r w r w 
-w w w w w r w w w w w w w w w w w w r w 
-w r r r r r r r r r r r r r r r r r r w 
-w w w w w w w w w w w w w w w w w w w w 
-b b b b b b b b b b b b b b b b b b b b
-b b b b b b b b b b b b b b b b b b b b 
-b b b b b b b b b b b b b b b b b b b b
-b b b b b b b b b b b b b b b b b b b b
-b b b b b b b b b b b b b b b b b b b b
 
+
+
+p r r r r r r r r r r r r r r r r r r r
+r w w w w w w w w w r w w w w w w w w r
+r w r r r w r o r w o d r r r w r o w r
+r w r r r d r r r w r w r r r w r r w r
+r w r r r w w w d w r w r o r d r r w r
+r w r r r w r o r w r w r r o w r r w r
+r w d w w w w w w w r w w w w w w w w r
+r r o r r r r r r r r r r r r r r r r r
+r w w w w w w w w r w w d w w w w w w r
+r w r r w r r r w r w r r r d r r r w r
+r w r o w r r r d o w r r r w r r r w r
+r w r r d r o r w r w r r r w w w d w r
+r w o r w r r r w r w r r r w r o r w r
+o w w w w w w w w r w w w w w w w w w r
+r r r r r r r r r r r r r r r r r r r r
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b t b t b 
+b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b t b t b
+b b b b b b b b b b b b b b b b b b b b
 
