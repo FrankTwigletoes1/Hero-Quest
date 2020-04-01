@@ -6,8 +6,7 @@ import os
 fps = 60
 screenSize = (int(1000), int(1000))
 
-player_steps = 50
-
+player_steps = 12
 player_sprites = pygame.sprite.Group() # Playeren
 middle_sprites = pygame.sprite.Group() # Alle sprites som aldrig bevægere sig men opdateres
 background_sprites = pygame.sprite.Group() # Vægge, alle sprites som aldrig bevæger sig eller skal opdateres
@@ -104,10 +103,15 @@ class Player1(Csprite):
                     self.rect.y = self.rect.y-50
                 else:
                     player_steps -= 1
-            
+        
             self.image = image
             self.image.set_colorkey((69,255,0))
             middle_sprites.draw(game_screen)
+        
+        def steps():
+            pass
+
+
 
 class Terning(Csprite):
     def __init__(self, x, y):
@@ -133,40 +137,11 @@ class Terning(Csprite):
 
     def T_move (self):
         self.nr = random.randint(1,6)
-
-        if self.nr == 1:
-            T_1 = pygame.image.load("sprites/T_1.png")
-            self.image = T_1
-            player_steps += 1
-            
-        if self.nr == 2:
-            T_2 = pygame.image.load("sprites/T_2.png")
-            self.image = T_2
-            player_steps += 2
-
-        if self.nr == 3:
-            T_3 = pygame.image.load("sprites/T_3.png")
-            self.image = T_3
-            player_steps += 3
-
-        if self.nr == 4:
-            T_4 = pygame.image.load("sprites/T_4.png")
-            self.image = T_4
-            player_steps += 4
-
-        if self.nr == 5:
-            T_5 = pygame.image.load("sprites/T_5.png")
-            self.image = T_5
-            player_steps += 5
-
-        if self.nr == 6:
-            T_6 = pygame.image.load("sprites/T_6.png")
-            self.image = T_6
-            player_steps += 6
+        self.image = pygame.image.load("sprites/T_" + self.nr + ".png")
+        player_steps += self.nr
 
 class map():
     def read(self, file):
-
         mapchars = []
         self.doorNum = 1
 
@@ -185,11 +160,14 @@ class map():
     def assignblocks(self):
         global player
         global doorObjs
+        
         mapRead = map()
         char = mapRead.read("map.txt")
         i = 0
+        
         doorObjs = list()
         doorNum = 0
+
         for y in range(20):
             for x in range(20):
                 #Road
@@ -225,7 +203,6 @@ class map():
         #player_coord = (player.x/50, player.y/50)
         #player_change = (1 if(player_movement_direction == "right") else -1, 1 if(player_movement_direction == "down") else -1)
         pass
-        
 
 def pygame_modules_have_loaded():
     success = True
@@ -236,7 +213,6 @@ def pygame_modules_have_loaded():
     return success
 
 pygame.init()
-
 
 if pygame_modules_have_loaded():
     game_screen = pygame.display.set_mode(screenSize)
