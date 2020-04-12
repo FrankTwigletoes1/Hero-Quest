@@ -4,12 +4,13 @@ from enum import Enum
 fps = 60
 screenSize = (int(1000), int(1000))
 
-player_sprites = pygame.sprite.Group() # Playeren
+player_sprites = pygame.sprite.Group() #Playeren
 middle_sprites = pygame.sprite.Group() # Alle sprites som aldrig bevægere sig men opdateres
 background_sprites = pygame.sprite.Group() # Vægge, alle sprites som aldrig bevæger sig eller skal opdateres
 entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt måde
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
+
 
 class FIELDTYPE(Enum):
     BACKGROUND = "b"
