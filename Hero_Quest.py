@@ -11,7 +11,6 @@ entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt må
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
 
-
 class FIELDTYPE(Enum):
     BACKGROUND = "b"
     DOOR = "d"
