@@ -295,7 +295,7 @@ if pygame_modules_have_loaded():
             pass
         
         if key_name == "r":
-            erning_move1.T_move()
+            terning_move1.T_move()
             terning_move2.T_move()
 
         #debug output
