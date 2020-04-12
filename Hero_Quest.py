@@ -1,7 +1,6 @@
-﻿import sys, pygame, options, os
+﻿import sys, pygame, options, os, random
 from enum import Enum
 
-fps = 60
 screenSize = (int(1000), int(1000))
 
 player_sprites = pygame.sprite.Group() #Playeren
@@ -10,7 +9,6 @@ background_sprites = pygame.sprite.Group() # Vægge, alle sprites som aldrig bev
 entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt måde
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
-
 
 class FIELDTYPE(Enum):
     BACKGROUND = "b"
@@ -29,6 +27,9 @@ class Csprite(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x*50
         self.rect.y = y*50
+    
+    def get_pos(self):
+        return int(self.rect.y/50 * 20 + self.rect.x/50)
     
     def use(self):
         pass
@@ -55,13 +56,13 @@ class Door(Csprite):
     
     def use(self):
         self.open()
-        move_exec.add(self.close())
+        move_exec.append(self.close)
     
     def open(self):
-        self.image = pygame.load.image("sprites/open_door.png")
+        self.image = pygame.image.load("sprites/open_door.png")
         
     def close(self):
-        self.image = pygame.load.image("sprites/door.png")
+        self.image = pygame.image.load("sprites/door.png")
 
 class Chest(Csprite):
     def __init__(self,x,y):
@@ -87,7 +88,7 @@ class Player1(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
         self.image.set_colorkey((69,255,0))
-        self.steps = 0
+        self.steps = 100 # MIDERTIDLIG VÆRDIG INDTIL TERNINGER ER IMPLEMENTERET
 
     def move(self, direction):
         image = pygame.image.load("sprites/player1Down.png")
@@ -130,7 +131,6 @@ class Player1(Csprite):
         
             self.image = image
             self.image.set_colorkey((69,255,0))
-            middle_sprites.draw(game_screen)
 
 class Dice(Csprite):
     def __init__(self, x, y):
@@ -174,34 +174,45 @@ class map():
         return mapchars
     
     def getspritegroup(self, letter):
-        if letter == FIELDTYPE.ROAD:
+        if letter == FIELDTYPE.ROAD.value:
             return middle_sprites
 
-        elif letter == FIELDTYPE.WALL:
+        elif letter == FIELDTYPE.WALL.value:
             return background_sprites
 
-        elif letter == FIELDTYPE.DOOR:
+        elif letter == FIELDTYPE.DOOR.value:
             return entity_sprites
 
-        elif letter == FIELDTYPE.PLAYER:
+        elif letter == FIELDTYPE.PLAYER.value:
             return player_sprites
 
-        elif letter == FIELDTYPE.BACKGROUND:
+        elif letter == FIELDTYPE.BACKGROUND.value:
             return background_sprites
 
-        elif letter == FIELDTYPE.ORC:
+        elif letter == FIELDTYPE.ORC.value:
             return background_sprites
+    
+    def getspritefromcoord(self, coord):
+        sprite_list = [player_sprites, middle_sprites, background_sprites, entity_sprites]
+
+        for sprite_type in sprite_list:
+            for sprite_individual in sprite_type.sprites():
+                if(sprite_individual.get_pos() == coord):
+                    return sprite_individual
+
 
     def getblockfield(self, x, y):
-        mapRead = map()
-        return mapRead.getspritegroup(mapRead.read("map.txt")[int((x/int(50)) * (y/int(50)))]).sprites()[int((x/int(50)) * (y/int(50)))]
+        bcoord = int(y * 20 + x)
+        sprite = self.getspritefromcoord(bcoord)
+
+        print("startpos: " + str([x, y]) + ", pos: " + str(bcoord) + ", sprite: " + str(sprite))
+        return sprite
         
     def assignblocks(self):
         global player
         global doorObjs
         
-        mapRead = map()
-        char = mapRead.read("map.txt")
+        char = self.read("map.txt")
         i = 0
         diceObjs = list()
         doorObjs = list()
@@ -250,42 +261,64 @@ class map():
     
     def checkblocks(self, player_movement_direction):
         player_coord = [player.rect.x/50, player.rect.y/50]
-        player_change = [1 if(player_movement_direction == "right") else -1, 1 if(player_movement_direction == "down") else -1]
-        player_new = player_coord + player_change
+        player_change_horizontal = 1 if(player_movement_direction == "right") else -1 if(player_movement_direction == "left") else 0
+        player_change_vertical = 1 if(player_movement_direction == "down") else -1 if(player_movement_direction == "up") else 0
+        player_coord_new = [a + b for a, b in zip(player_coord, [player_change_horizontal, player_change_vertical])]
 
-        return self.getblockfield(player_new[0], player_new[1])
+        return self.getblockfield(player_coord_new[0], player_coord_new[1])
 
-def pygame_modules_have_loaded():
-    success = True
+class main():
+    def __init__(self):
+        pygame.init()
+        pygame.display.set_caption('Hero Quest Digital')
 
-    if not pygame.display.get_init:
-        success = False
+        self.game_screen = pygame.display.set_mode(screenSize)
+        self.clock = pygame.time.Clock()
+        self.fps = 60
+        self.prepare_test()
+        self.loop()
 
-    return success
+    # Kører spillet i et loop indtil spilleren trykker esc, hvilket lukker spillet
+    def loop(self):
+        while True:
+            for event in pygame.event.get():
+                if event.type == pygame.QUIT:
+                    pygame.quit()
+                    sys.exit()
 
-pygame.init()
+                if event.type == pygame.KEYDOWN:
+                    key_name = pygame.key.name(event.key)
+                    self.handle_input(key_name)
 
-if pygame_modules_have_loaded():
-    game_screen = pygame.display.set_mode(screenSize)
-    pygame.display.set_caption('Hero Quest Digital')
-    clock = pygame.time.Clock()
+            milliseconds = self.clock.tick(self.fps)
+            seconds = milliseconds / 1000.0
+            self.update(self.game_screen, seconds)
 
-    def prepare_test():
-        # Kode som skal køre inden game loop
-        drawmap = map()
-        drawmap.assignblocks()
-        background_sprites.draw(game_screen)
-        middle_sprites.draw(game_screen)
-        entity_sprites.draw(game_screen)
+            sleep_time = (1000.0 / self.fps) - milliseconds
+            pygame.time.wait(int(sleep_time)) if(sleep_time > 0.0) else pygame.time.wait(1)
+    
+    # Kode som skal køre inden game loop
+    def prepare_test(self):
+        self.drawmap = map()
+        self.drawmap.assignblocks()
+        background_sprites.draw(self.game_screen)
 
-    def handle_input(key_name):
-        print(key_name)
+    # Kode som køre hver update cyklus
+    # screen for at kunne få adgang til "surface"
+    # time sørger for adgang til sidste opdatering af skærm
+    # door.entityUpdate()
+    def update(self, screen, time):
+        middle_sprites.draw(self.game_screen)
+        entity_sprites.draw(self.game_screen)
+        player_sprites.draw(self.game_screen)
+        pygame.display.update()
+
+    def handle_input(self, key_name):
         if key_name == "right" or "left" or "up" or "down":
             for func in move_exec:
                 func()
             move_exec.clear()
-            drawmap = map()
-            drawmap.checkblocks(key_name).use()
+            self.drawmap.checkblocks(key_name).use()
             player.move(key_name)
         
         if key_name == "space":
@@ -296,8 +329,9 @@ if pygame_modules_have_loaded():
             pass
         
         if key_name == "r":
-            terning_move1.T_move()
-            terning_move2.T_move()
+            #terning_move1.T_move()
+            #terning_move2.T_move()
+            pass
 
         #debug output
         if key_name == "p":
@@ -309,41 +343,4 @@ if pygame_modules_have_loaded():
             pygame.quit()
             sys.exit(0)
 
-    def update(screen, time):
-        # Kode som køre hver update cyklus
-        #  screen for at kunne få adgang til "surface"
-        # time sørger for adgang til sidste opdatering af skærm
-        #door.entityUpdate()
-        entity_sprites.draw(game_screen)
-        player_sprites.draw(game_screen)
-        pygame.display.update()
-   
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    #
-    #           LAD VÆR MED AT RØR DET NEDEN UNDER!!!
-    #
-    #!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
-    def main():
-        prepare_test()
-
-        while True:
-            for event in pygame.event.get():
-                if event.type == quit:
-                    pygame.quit()
-                    sys.exit()
-
-                if event.type == pygame.KEYDOWN:
-                    key_name = pygame.key.name(event.key)
-                    handle_input(key_name)
-
-            milliseconds = clock.tick(fps)
-            seconds = milliseconds / 1000.0
-            update(game_screen, seconds)
-
-            sleep_time = (1000.0 / fps) - milliseconds
-            if sleep_time > 0.0:
-                pygame.time.wait(int(sleep_time))
-            else:
-                pygame.time.wait(1)
-
-    main()
+main()
