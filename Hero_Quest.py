@@ -117,6 +117,7 @@ class Player1(Csprite):
                 else:
                     self.steps -= 1
 
+
             elif direction == "left" and not self.rect.x-50 < 0:
                 image = pygame.image.load("sprites/player1Left.png")
                 self.rect.x = self.rect.x-50
