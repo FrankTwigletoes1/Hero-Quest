@@ -88,22 +88,31 @@ class Trap(Csprite):
 class Orc(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/orc.png")
+        self.orcHealth = 1
     
     def ai_move(self):
-        self.moveTypes = ["right", "left", "up", "down"]
-        self.direction = random.choice(self.moveTypes)
-        blockinfront = map.checkblocks()
+        #self.moveTypes = ["right", "left", "up", "down"]
+        #self.direction = random.choice(self.moveTypes)
+        #blockinfront = map.checkblocks()
+        pass
 
     def attack(self):
         pass
+
+    def checkhealth(self):
+
+        if orcHealth < 0:
+            self.kill()
     
 class Player1(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
         self.steps = 100 # MIDERTIDLIG VÆRDIG INDTIL TERNINGER ER IMPLEMENTERET
+        self.health = 6
 
     def move(self, drawmap, direction):
         image = pygame.image.load("sprites/player1Down.png")
+        self.direction = direction
         if self.steps > 0:
             sprite = drawmap.checkblocks(self, direction)
             sprite.use()
@@ -148,7 +157,11 @@ class Player1(Csprite):
             self.image = image
             self.image.set_colorkey((69,255,0))
 
-    def attack(self):
+    def attack(self, drawmap):
+        orc = drawmap.checkblocks(entity_sprites, self.direction)
+        print(orc)
+        
+        #orc.checkHealth()
         pass
 
 class NumDice(Csprite):
@@ -233,7 +246,7 @@ class map():
         global player
         global doorObjs
         global diceObjs
-
+        global orcObjs
         char = self.read("map.txt")
         i = 0
         diceObjs = list()
@@ -278,12 +291,6 @@ class map():
                     backgroundTile = BackgroundMenuTile(x,y)
                     background_sprites.add(backgroundTile)
                     i += 1
-                #Orc
-                elif char[i] == "o":
-                    orc = Orc(x,y)
-                    entity_sprites.add(entity_sprites)
-                    i += 1
-                
                 #terning
                 elif char[i] == "t":
                     backgroundTile = BackgroundMenuTile(x,y)
@@ -372,10 +379,7 @@ class main():
                 player.move(self.drawmap, key_name)
         
         if key_name == "space":
-            diceObjs[2].Roll()
-            diceObjs[3].Roll()
-            diceObjs[4].Roll()
-            diceObjs[5].Roll()
+            player.attack(self.drawmap)
         
         if key_name == "r":
             diceObjs[0].T_move()
