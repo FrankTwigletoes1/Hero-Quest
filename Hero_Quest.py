@@ -236,6 +236,14 @@ class map():
 
     def getblockfield(self, x, y):
         return self.getspritefromcoord(int(y * 20 + x))
+    
+    def checkblocksaround(self, sprite1, sprite2type, radius=1):
+        for i in range(-1 * radius, radius + 1):
+            for j in range(-1 * radius, radius + 1):
+                entity_coord = [sprite1.rect.x/50, sprite1.rect.y/50]
+                entity_coord_new = [a + b for a, b in zip(entity_coord, [i, j])]
+                entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
+                return (True if(isinstance(entity_around, sprite2type)) else False)
         
     def assignblocks(self):
         global player
@@ -328,12 +336,8 @@ class main():
         self.fps = 60
         self.prepare_test()
         self.loop()
-
-    def turn(self):
-        if player.steps < 0:
-            return "orcTurn"
-        elif player.steps > 0:
-            return "playerTurn"
+        self.player_turn = True
+        self.dice_round_step_rolled = False
 
     # Kører spillet i et loop indtil spilleren trykker esc, hvilket lukker spillet
     def loop(self):
@@ -372,26 +376,31 @@ class main():
         pygame.display.update()
 
     def handle_input(self, key_name):
-        if self.turn() == "playerTurn":
-            if key_name == "right" or "left" or "up" or "down":
+        if True:
+            if key_name == "right" or "left" or "up" or "down" and self.dice_round_step_rolled:
                 for func in move_exec:
                     func()
                 move_exec.clear()
                 player.move(key_name)
+                self.player_turn = (True if(player.steps > 0) else False)
         
-        if key_name == "space":
-            player.attack()
-        
-        if key_name == "r":
-            if(player.steps == 0):
-                player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
+            if key_name == "space":
+                print(drawmap.checkblocksaround(player, Orc))
+            
+            if key_name == "r":
+                if(player.steps == 0):
+                    player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
+                    self.dice_round_step_rolled = True
 
-        #debug output
-        if key_name == "p":
-            print(diceObjs)
-            print(doorObjs)
-            print(pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False))
-            print(background_sprites.sprites())
+            #debug output
+            if key_name == "p":
+                print(diceObjs)
+                print(doorObjs)
+                print(pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False))
+                print(background_sprites.sprites())
+        
+        else:
+            pass
 
         if key_name == "escape":
             pygame.quit()
