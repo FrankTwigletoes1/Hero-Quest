@@ -118,12 +118,14 @@ class Player1(Csprite):
         if self.steps > 0:
             front_sprite = drawmap.getblockfront(self, direction)
             front_sprite.use()
+            collided = False
 
             if direction == "right" and self.rect.x+50 < screenSize[0]:
                 image = pygame.image.load("sprites/player1Right.png")
                 self.rect.x = self.rect.x+50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
+                    collided = True
                     self.rect.x = self.rect.x-50
                 else:
                     self.steps -= 1
@@ -133,6 +135,7 @@ class Player1(Csprite):
                 self.rect.x = self.rect.x-50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
+                    collided = True
                     self.rect.x = self.rect.x+50
                 else:
                     self.steps -= 1
@@ -142,6 +145,7 @@ class Player1(Csprite):
                 self.rect.y = self.rect.y-50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
+                    collided = True
                     self.rect.y = self.rect.y+50
                 else:
                     self.steps -= 1
@@ -151,13 +155,14 @@ class Player1(Csprite):
                 self.rect.y = self.rect.y+50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
+                    collided = True
                     self.rect.y = self.rect.y-50
                 else:
                     self.steps -= 1
 
             self.image = image
             self.image.set_colorkey((69,255,0))
-            diceObjs[0].subtract(diceObjs[1].subtract())
+            diceObjs[0].subtract(diceObjs[1].subtract()) if(not collided) else None
 
     def attack(self):
         orc = drawmap.getblockfront(entity_sprites, self.direction)
