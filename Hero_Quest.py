@@ -93,6 +93,9 @@ class Orc(Csprite):
         #self.direction = random.choice(self.moveTypes)
         #blockinfront = map.getblockfront()
         pass
+    
+    def hide(self):
+        pass
 
     def attack(self):
         pass
@@ -158,6 +161,15 @@ class Player1(Csprite):
             self.image = image
             self.image.set_colorkey((69,255,0))
             diceObjs[0].subtract(diceObjs[1].subtract())
+
+    def checkSight(self, x_0, y_0, x_1, y_1):
+        length = max(abs(x_1 - x_0), abs(y_1-y_0))
+        for i in range(0, length):
+            t = float(i)/length
+
+            x = round(x_0 * (1.0 * t) + x_1 * t)
+            y = round(y_0 * (1.0 * t) + y_1 * t)
+            print(drawmap.getBlockField(x,y))
 
     def attack(self):
         orc = drawmap.getblockfront(entity_sprites, self.direction)
@@ -376,6 +388,10 @@ class main():
         
         if key_name == "space":
             player.attack()
+
+        if key_name == 'h':
+            for x in orcObjs:
+                x.hide()
         
         if key_name == "r":
             if(player.steps == 0):
