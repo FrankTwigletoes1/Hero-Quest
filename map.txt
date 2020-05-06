@@ -15,9 +15,9 @@ r w r r w r r r w r w r r r w r r r w r
 r w w w w w w w w r w w w w w w w w w r
 r r r r r r r r r r r r r r r r r r r r
 b b b b b b b b b b b b b b b b b b b b
-b b b b b b b b b b b b n n b b t t b b 
-b b b b b b b b b b b b b b b b t t b b
+b b b b b b b b b b b b n n b b b t b b 
 b b b b b b b b b b b b b b b b b b b b
+b b b b b b b b b b b b b b b b b t b b
 b b b b b b b b b b b b b b b b b b b b
 
 

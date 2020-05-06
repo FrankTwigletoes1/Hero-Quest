@@ -1,6 +1,9 @@
 ﻿import sys, pygame, options, os, random
 from enum import Enum
 
+pygame.init()
+pygame.font.init()
+
 screen_size_x = 1000
 screen_size_y = 1000
 screenSize = (screen_size_x, screen_size_y)
@@ -327,7 +330,7 @@ class map():
         return self.getspritefromcoord(int(y * 20 + x))
     
     # form (0=around, 1=cross)
-    def getblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False, returnarray=False,form=0):
+    def getblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False, returnarray=False, form=0):
         entity_array = []
         form_cross_disallowed = [(-1,-1),(1,1),(-1,1),(1,-1)]
 
@@ -336,13 +339,16 @@ class map():
                 if(form == 0 or ((i, j) not in form_cross_disallowed and form == 1)):
                     entity_coord = [sprite1.rect.x/50, sprite1.rect.y/50]
                     entity_coord_new = [a + b for a, b in zip(entity_coord, [i, j])]
-                    entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
                     
-                    if(isinstance(entity_around, sprite2type)):
-                        if(returnarray and returnobject):
-                            entity_array.append(entity_around)
-                        else:
-                            return (True if(not returnobject) else entity_around)
+                    if(entity_coord_new[0] >= 0 and entity_coord_new[1] >= 0):
+                        entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
+                        print(entity_coord_new)
+                        
+                        if(isinstance(entity_around, sprite2type)):
+                            if(returnarray and returnobject):
+                                entity_array.append(entity_around)
+                            else:
+                                return (True if(not returnobject) else entity_around)
         
         return entity_array
 
@@ -436,7 +442,6 @@ class map():
 
 class main():
     def __init__(self):
-        pygame.init()
         pygame.display.set_caption('Hero Quest Digital')
 
         self.font_p1 = pygame.font.SysFont('Roboto', 100)
@@ -444,7 +449,6 @@ class main():
         self.font_p3 = pygame.font.SysFont('Roboto', 60)
         self.font_p4 = pygame.font.SysFont('Roboto', 40)
         self.font_p5 = pygame.font.SysFont('Roboto', 20)
-
         self.game_screen = pygame.display.set_mode(screenSize)
         self.clock = pygame.time.Clock()
         self.fps = 60
@@ -466,8 +470,7 @@ class main():
                     sys.exit()
 
                 if event.type == pygame.KEYDOWN:
-                    key_name = pygame.key.name(event.key)
-                    self.handle_input(key_name)
+                    self.handle_input(pygame.key.name(event.key))
 
             milliseconds = self.clock.tick(self.fps)
             seconds = milliseconds / 1000.0
@@ -482,7 +485,7 @@ class main():
     
     # Kode som skal køre inden game loop
     def prepare_test(self):
-        global drawmap 
+        global drawmap
         drawmap = map()
         drawmap.assignblocks()
         background_sprites.draw(self.game_screen)
@@ -495,11 +498,14 @@ class main():
         middle_sprites.draw(self.game_screen)
         entity_sprites.draw(self.game_screen)
         player_sprites.draw(self.game_screen)
-        render_text(self.game_screen, self.font_p4, self.bar_message, (255,255,255), y=775)
-        render_text(self.game_screen, self.font_p4, "arrow keys = movement", (255,255,255), y=800, offsetx=10, alignment="left")
-        render_text(self.game_screen, self.font_p4, "r=dice roll", (255,255,255), y=835, offsetx=10, alignment="left")
-        render_text(self.game_screen, self.font_p4, "a=attack roll", (255,255,255), y=870, offsetx=10, alignment="left")
-        render_text(self.game_screen, self.font_p4, "e=use", (255,255,255), y=905, offsetx=10, alignment="left")
+        render_text(self.game_screen, self.font_p4, self.bar_message, (255,255,255), offsety=-50, alignment="bottom")
+        render_text(self.game_screen, self.font_p5, "movement dice", (255,255,255), offsetx=-305, offsety=-200, alignment="right, bottom")
+        render_text(self.game_screen, self.font_p5, "player attack dice", (255,255,255), offsetx=-70, offsety=-200, alignment="right, bottom")
+        render_text(self.game_screen, self.font_p5, "enemy attack dice", (255,255,255), offsetx=-70, offsety=-100, alignment="right, bottom")
+        render_text(self.game_screen, self.font_p5, "arrow keys: movement", (255,255,255), offsetx=10, offsety=-55, alignment="left, bottom")
+        render_text(self.game_screen, self.font_p5, "r: dice roll", (255,255,255), offsetx=10, offsety=-40, alignment="left, bottom")
+        render_text(self.game_screen, self.font_p5, "a: attack roll", (255,255,255), offsetx=10, offsety=-25, alignment="left, bottom")
+        render_text(self.game_screen, self.font_p5, "e: use", (255,255,255), offsetx=10, offsety=-10, alignment="left, bottom")
         pygame.display.update()
 
     def handle_input(self, key_name):
