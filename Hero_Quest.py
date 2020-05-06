@@ -37,6 +37,9 @@ class Csprite(pygame.sprite.Sprite):
     def use(self):
         pass
 
+    def __str__(self):
+        return self.__class__.__name__
+
 class none(Csprite):
     def __init__(self):
         pass
@@ -85,7 +88,7 @@ class Trap(Csprite):
 class Orc(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/orc.png")
-        self.orcHealth = 1
+        self.health = 2
         self.solid = True
     
     def ai_move(self):
@@ -97,19 +100,18 @@ class Orc(Csprite):
     def hide(self):
         pass
 
-    def attack(self):
-        pass
+    def damage(self, damage):
+        self.health -= damage
 
-    def checkhealth(self):
-        pass
-        #if orcHealth < 0:
-        #    self.kill()
+        if(self.health <= 0):
+            self.kill()
     
 class Player1(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
-        self.steps = 0 # MIDERTIDLIG VÆRDIG INDTIL TERNINGER ER IMPLEMENTERET
+        self.steps = 0
         self.health = 6
+        self.attack = 1
         self.solid = True
 
     def move(self, direction):
@@ -168,7 +170,7 @@ class Player1(Csprite):
             diceObjs[0].subtract(diceObjs[1].subtract()) if(not collided) else None
 
     def checkSight(self, x_0, y_0, x_1, y_1):
-        length = max(abs(x_1 - x_0), abs(y_1-y_0))
+        length = max(abs(x_1 - x_0), abs(y_1 - y_0))
         for i in range(0, length):
             t = float(i)/length
 
@@ -176,12 +178,8 @@ class Player1(Csprite):
             y = round(y_0 * (1.0 * t) + y_1 * t)
             print(drawmap.getBlockField(x,y))
 
-    def attack(self):
-        orc = drawmap.getblockfront(entity_sprites, self.direction)
-        print(orc)
-        
-        #orc.checkHealth()
-        pass
+    def damage(self, damage):
+        self.health -= damage
 
 class NumDice(Csprite):
     def __init__(self, x, y):
@@ -208,20 +206,23 @@ class Dice(Csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
 
-    def Roll (self):
-        self.roll = random.randint(1,6)
-        if self.roll == 1 or self.roll == 2 or self.roll == 3:
-            self.preimage = pygame.image.load("sprites/T_damage.png")
+    def reset(self):
+        self.image = pygame.image.load("sprites/T_start.png")
 
-        elif self.roll == 4 or self.roll == 5:
-            self.preimage = pygame.image.load("sprites/T_deffent.png")
+    def roll(self):
+        self.nr = random.randint(1,6)
+        self.image = pygame.image.load("sprites/T_start.png")
 
-        elif self.roll == 6:
-            self.preimage = pygame.image.load("sprites/T_eveldeffet.png")
+        if self.nr < 4:
+            self.image = pygame.image.load("sprites/T_damage.png")
 
-        else:
-            self.preimage = pygame.image.load("sprites/T_start.png")
-        self.image = self.preimage
+        elif self.nr == 4 or self.nr == 5:
+            self.image = pygame.image.load("sprites/T_deffent.png")
+
+        elif self.nr == 6:
+            self.image = pygame.image.load("sprites/T_eveldeffet.png")
+        
+        return self.nr
 
 class map():
     def read(self, file):
@@ -249,14 +250,16 @@ class map():
     def getblockfield(self, x, y):
         return self.getspritefromcoord(int(y * 20 + x))
     
-    def checkblocksaround(self, sprite1, sprite2type, radius=1):
+    def checkblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False):
         for i in range(-1 * radius, radius + 1):
             for j in range(-1 * radius, radius + 1):
                 entity_coord = [sprite1.rect.x/50, sprite1.rect.y/50]
                 entity_coord_new = [a + b for a, b in zip(entity_coord, [i, j])]
                 entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
-                return (True if(isinstance(entity_around, sprite2type)) else False)
-        
+                
+                if(isinstance(entity_around, sprite2type)):
+                    return (True if(not returnobject) else entity_around)
+
     def assignblocks(self):
         global player
         global doorObjs
@@ -346,10 +349,11 @@ class main():
         self.game_screen = pygame.display.set_mode(screenSize)
         self.clock = pygame.time.Clock()
         self.fps = 60
-        self.prepare_test()
-        self.loop()
         self.player_turn = True
         self.dice_round_step_rolled = False
+        self.battlemode = False
+        self.prepare_test()
+        self.loop()
 
     # Kører spillet i et loop indtil spilleren trykker esc, hvilket lukker spillet
     def loop(self):
@@ -388,31 +392,47 @@ class main():
         pygame.display.update()
 
     def handle_input(self, key_name):
-        if True:
-            if key_name == "right" or "left" or "up" or "down" and self.dice_round_step_rolled:
-                for func in move_exec:
-                    func()
-                move_exec.clear()
-                player.move(key_name)
-                self.player_turn = (True if(player.steps > 0) else False)
-        
-            if key_name == "space":
-                print(drawmap.checkblocksaround(player, Orc))
-            
-            if key_name == "r":
-                if(player.steps == 0):
-                    player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
-                    self.dice_round_step_rolled = True
+        if(self.player_turn):
+            if(not self.battlemode):
+                if((key_name == "right" or key_name == "left" or key_name =="up" or key_name == "down") and self.dice_round_step_rolled):
+                    for func in move_exec:
+                        func()
+                    move_exec.clear()
+                    player.move(key_name)
+                    self.player_turn = (True if(player.steps > 0) else False)
+                    battle_enemy = drawmap.checkblocksaround(player, Orc, returnobject=True)
 
-            #debug output
-            if key_name == "p":
-                print(diceObjs)
-                print(doorObjs)
-                print(pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False))
-                print(background_sprites.sprites())
-        
+                    if(battle_enemy):
+                        self.battlemode = True
+                        self.battleenemy = battle_enemy
+                
+                if key_name == "r":
+                    if(player.steps == 0):
+                        player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
+                        self.dice_round_step_rolled = True
+
+                #debug output
+                if key_name == "p":
+                    print(diceObjs)
+                    print(doorObjs)
+                    print(pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False))
+                    print(background_sprites.sprites())
+            else:
+                if key_name == "a":
+                    player_roll = diceObjs[2].roll()
+                    enemy_roll = diceObjs[3].roll()
+                    player.damage(1) if(enemy_roll < 4 and (enemy_roll != 4 or enemy_roll != 5)) else None
+                    self.battleenemy.damage(1) if(player_roll < 4 and (player_roll != 4 or player_roll != 5)) else None
+                    print("phealth: " + str(player.health) + ", ehealth:" + str(self.battleenemy.health))
+                    
+                    if(player.health == 0 or self.battleenemy.health == 0):
+                        diceObjs[2].reset()
+                        diceObjs[3].reset()
+                        self.battlemode = False
+                        self.battleenemy = None
+
         else:
-            pass
+            print("monsters turn")
 
         if key_name == "escape":
             pygame.quit()
