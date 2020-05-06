@@ -10,6 +10,9 @@ entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt må
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
 
+def sprite_collide(sprite1, sprite2):
+    return (True if(pygame.sprite.collide_mask(sprite1, sprite2) and sprite1.solid and sprite2.solid) else False)
+
 class FIELDTYPE(Enum):
     NONE = None
     BACKGROUND = "b"
@@ -28,13 +31,11 @@ class Csprite(pygame.sprite.Sprite):
         self.rect = self.image.get_rect()
         self.rect.x = x*50
         self.rect.y = y*50
+        self.solid = False
         self.image.set_colorkey((69,255,0))
     
     def get_pos(self):
         return int(self.rect.y/50 * 20 + self.rect.x/50)
-    
-    def solid(self):
-        return False
     
     def use(self):
         pass
@@ -58,6 +59,7 @@ class Background(Csprite):
 class Wall(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/wall.png")
+        self.solid = True
 
 class Door(Csprite):
     def __init__(self,x,y):
@@ -68,14 +70,12 @@ class Door(Csprite):
         self.open()
         #move_exec.append(self.close)
     
-    def solid(self):
-        return (True if(self.locked) else False)
-    
     def open(self):
         self.image = pygame.image.load("sprites/open_door.png")
         
     def close(self):
         self.image = pygame.image.load("sprites/door.png")
+        self.solid = True
 
 class Chest(Csprite):
     def __init__(self,x,y):
@@ -89,6 +89,7 @@ class Orc(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/orc.png")
         self.orcHealth = 1
+        self.solid = True
     
     def ai_move(self):
         #self.moveTypes = ["right", "left", "up", "down"]
@@ -100,9 +101,9 @@ class Orc(Csprite):
         pass
 
     def checkhealth(self):
-
-        if orcHealth < 0:
-            self.kill()
+        pass
+        #if orcHealth < 0:
+        #    self.kill()
     
 class Player1(Csprite):
     def __init__(self,x,y):
@@ -120,7 +121,9 @@ class Player1(Csprite):
             if direction == "right" and self.rect.x+50 < screenSize[0]:
                 image = pygame.image.load("sprites/player1Right.png")
                 self.rect.x = self.rect.x+50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) or sprite.solid():
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
+                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
+                or sprite.solid:
                     print("Collided")
                     self.rect.x = self.rect.x-50
                 else:
@@ -130,7 +133,9 @@ class Player1(Csprite):
             elif direction == "left" and not self.rect.x-50 < 0:
                 image = pygame.image.load("sprites/player1Left.png")
                 self.rect.x = self.rect.x-50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) or sprite.solid():
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
+                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
+                or sprite.solid:
                     print("Collided")
                     self.rect.x = self.rect.x+50
                 else:
@@ -139,7 +144,9 @@ class Player1(Csprite):
             elif direction == "up" and not self.rect.y-50 < 0 :
                 image = pygame.image.load("sprites/player1Up.png")
                 self.rect.y = self.rect.y-50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) or sprite.solid():
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
+                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
+                or sprite.solid:
                     print("Collided")
                     self.rect.y = self.rect.y+50
                 else:
@@ -148,7 +155,9 @@ class Player1(Csprite):
             elif direction == "down" and not self.rect.y-50 > screenSize[1]-400:
                 image = pygame.image.load("sprites/player1Down.png")
                 self.rect.y = self.rect.y+50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) or sprite.solid():
+                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
+                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
+                or sprite.solid:
                     print("Collided")
                     self.rect.y = self.rect.y-50
                 else:
