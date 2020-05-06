@@ -10,9 +10,6 @@ entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt må
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
 
-def sprite_collide(sprite1, sprite2):
-    return (True if(pygame.sprite.collide_mask(sprite1, sprite2) and sprite1.solid and sprite2.solid) else False)
-
 class FIELDTYPE(Enum):
     NONE = None
     BACKGROUND = "b"
@@ -94,7 +91,7 @@ class Orc(Csprite):
     def ai_move(self):
         #self.moveTypes = ["right", "left", "up", "down"]
         #self.direction = random.choice(self.moveTypes)
-        #blockinfront = map.checkblocks()
+        #blockinfront = map.getblockfront()
         pass
 
     def attack(self):
@@ -108,34 +105,33 @@ class Orc(Csprite):
 class Player1(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
-        self.steps = 100 # MIDERTIDLIG VÆRDIG INDTIL TERNINGER ER IMPLEMENTERET
+        self.steps = 0 # MIDERTIDLIG VÆRDIG INDTIL TERNINGER ER IMPLEMENTERET
         self.health = 6
+        self.solid = True
 
-    def move(self, drawmap, direction):
+    def move(self, direction):
         image = pygame.image.load("sprites/player1Down.png")
         self.direction = direction
+
+        print("steps: " + str(self.steps))
+        
         if self.steps > 0:
-            sprite = drawmap.checkblocks(self, direction)
-            sprite.use()
+            front_sprite = drawmap.getblockfront(self, direction)
+            front_sprite.use()
 
             if direction == "right" and self.rect.x+50 < screenSize[0]:
                 image = pygame.image.load("sprites/player1Right.png")
                 self.rect.x = self.rect.x+50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
-                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
-                or sprite.solid:
+                if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
                     self.rect.x = self.rect.x-50
                 else:
                     self.steps -= 1
 
-
             elif direction == "left" and not self.rect.x-50 < 0:
                 image = pygame.image.load("sprites/player1Left.png")
                 self.rect.x = self.rect.x-50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
-                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
-                or sprite.solid:
+                if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
                     self.rect.x = self.rect.x+50
                 else:
@@ -144,9 +140,7 @@ class Player1(Csprite):
             elif direction == "up" and not self.rect.y-50 < 0 :
                 image = pygame.image.load("sprites/player1Up.png")
                 self.rect.y = self.rect.y-50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
-                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
-                or sprite.solid:
+                if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
                     self.rect.y = self.rect.y+50
                 else:
@@ -155,9 +149,7 @@ class Player1(Csprite):
             elif direction == "down" and not self.rect.y-50 > screenSize[1]-400:
                 image = pygame.image.load("sprites/player1Down.png")
                 self.rect.y = self.rect.y+50
-                if pygame.sprite.groupcollide(player_sprites, background_sprites, False, False) \
-                or pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False, sprite_collide) \
-                or sprite.solid:
+                if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
                     print("Collided")
                     self.rect.y = self.rect.y-50
                 else:
@@ -165,9 +157,10 @@ class Player1(Csprite):
 
             self.image = image
             self.image.set_colorkey((69,255,0))
+            diceObjs[0].subtract(diceObjs[1].subtract())
 
-    def attack(self, drawmap):
-        orc = drawmap.checkblocks(entity_sprites, self.direction)
+    def attack(self):
+        orc = drawmap.getblockfront(entity_sprites, self.direction)
         print(orc)
         
         #orc.checkHealth()
@@ -176,11 +169,23 @@ class Player1(Csprite):
 class NumDice(Csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
-        
+    
+    def reset(self):
+        self.image = pygame.image.load("sprites/T_start.png")
+    
+    def subtract(self, dice=None):
+        if(dice == None):
+            if(self.nr > 0):
+                self.nr -= 1
+                self.image = (pygame.image.load("sprites/T_" + str(self.nr) + ".png") if(self.nr > 0) else pygame.image.load("sprites/T_start.png"))
+                return self
+        return None
+
     def T_move (self):
         self.nr = random.randint(1,6)
-        self.image = pygame.image.load("sprites/T_" + self.nr + ".png")
-        player_steps += self.nr
+        self.image = pygame.image.load("sprites/T_" + str(self.nr) + ".png")
+        
+        return self.nr
 
 class Dice(Csprite):
     def __init__(self, x, y):
@@ -201,7 +206,6 @@ class Dice(Csprite):
             self.preimage = pygame.image.load("sprites/T_start.png")
         self.image = self.preimage
 
-
 class map():
     def read(self, file):
         mapchars = []
@@ -214,28 +218,9 @@ class map():
                         if each == FIELDTYPE.DOOR:
                             self.doorNum += 1
         return mapchars
-    """
-    def getspritegroup(self, letter):
-        if letter == FIELDTYPE.ROAD.value:
-            return middle_sprites
 
-        elif letter == FIELDTYPE.WALL.value:
-            return background_sprites
-
-        elif letter == FIELDTYPE.DOOR.value:
-            return entity_sprites
-
-        elif letter == FIELDTYPE.PLAYER.value:
-            return player_sprites
-
-        elif letter == FIELDTYPE.BACKGROUND.value:
-            return background_sprites
-
-        elif letter == FIELDTYPE.ORC.value:
-            return background_sprites
-    """
     def getspritefromcoord(self, coord):
-        sprite_list = [player_sprites, middle_sprites, background_sprites, entity_sprites]
+        sprite_list = [player_sprites, entity_sprites, middle_sprites, background_sprites]
 
         for sprite_type in sprite_list:
             for sprite_individual in sprite_type.sprites():
@@ -245,17 +230,14 @@ class map():
         return none()
 
     def getblockfield(self, x, y):
-        bcoord = int(y * 20 + x)
-        sprite = self.getspritefromcoord(bcoord)
-
-        print("startpos: " + str([x, y]) + ", pos: " + str(bcoord) + ", sprite: " + str(sprite))
-        return sprite
+        return self.getspritefromcoord(int(y * 20 + x))
         
     def assignblocks(self):
         global player
         global doorObjs
         global diceObjs
         global orcObjs
+        
         char = self.read("map.txt")
         i = 0
         diceObjs = list()
@@ -277,17 +259,20 @@ class map():
                         entity_sprites.add(orcObjs[orcNum])
                         orcNum += 1
                     i += 1
+                    
                 #Wall
                 elif char[i] == "w":
                     wall = Wall(x,y)
                     background_sprites.add(wall)
                     i += 1
+
                 #Door
                 elif char[i] == "d":
                     doorObjs.append(Door(x,y))
                     entity_sprites.add(doorObjs[doorNum])
                     doorNum += 1
                     i += 1
+
                 #player
                 elif char[i] == "p":
                     road = Road(x,y)
@@ -295,11 +280,13 @@ class map():
                     player = Player1(x,y)
                     player_sprites.add(player)
                     i += 1
+
                 #baggrund
                 elif char[i] == "b":
                     backgroundTile = BackgroundMenuTile(x,y)
                     background_sprites.add(backgroundTile)
                     i += 1
+
                 #terning
                 elif char[i] == "t":
                     backgroundTile = BackgroundMenuTile(x,y)
@@ -318,7 +305,7 @@ class map():
                     diceNum += 1
                     i += 1
     
-    def checkblocks(self, entity, movement_direction):
+    def getblockfront(self, entity, movement_direction):
         entity_coord = [entity.rect.x/50, entity.rect.y/50]
         entity_change_horizontal = 1 if(movement_direction == "right") else -1 if(movement_direction == "left") else 0
         entity_change_vertical = 1 if(movement_direction == "down") else -1 if(movement_direction == "up") else 0
@@ -336,7 +323,6 @@ class main():
         self.fps = 60
         self.prepare_test()
         self.loop()
-  
 
     def turn(self):
         if player.steps < 0:
@@ -365,8 +351,9 @@ class main():
     
     # Kode som skal køre inden game loop
     def prepare_test(self):
-        self.drawmap = map()
-        self.drawmap.assignblocks()
+        global drawmap 
+        drawmap = map()
+        drawmap.assignblocks()
         background_sprites.draw(self.game_screen)
 
     # Kode som køre hver update cyklus
@@ -385,15 +372,14 @@ class main():
                 for func in move_exec:
                     func()
                 move_exec.clear()
-                player.move(self.drawmap, key_name)
+                player.move(key_name)
         
         if key_name == "space":
-            player.attack(self.drawmap)
+            player.attack()
         
         if key_name == "r":
-            diceObjs[0].T_move()
-            diceObjs[1].T_move()
-            pass
+            if(player.steps == 0):
+                player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
 
         #debug output
         if key_name == "p":
