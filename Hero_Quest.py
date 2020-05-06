@@ -37,6 +37,10 @@ class Csprite(pygame.sprite.Sprite):
     def use(self):
         pass
 
+    def move_to(self, x, y):
+        self.rect.x = x*50
+        self.rect.y = y*50
+
     def __str__(self):
         return self.__class__.__name__
 
@@ -91,11 +95,12 @@ class Orc(Csprite):
         self.health = 2
         self.solid = True
     
-    def ai_move(self):
-        #self.moveTypes = ["right", "left", "up", "down"]
-        #self.direction = random.choice(self.moveTypes)
-        #blockinfront = map.getblockfront()
-        pass
+    def move_random(self):
+        open_areas_around = drawmap.getblocksaround(self, Road, returnobject=True, returnarray=True)
+        random_area = random.choice(open_areas_around)
+        print(random_area)
+        print(random_area.rect.x)
+        self.move_to(random_area.rect.x/50, random_area.rect.y/50)
     
     def hide(self):
         pass
@@ -250,15 +255,25 @@ class map():
     def getblockfield(self, x, y):
         return self.getspritefromcoord(int(y * 20 + x))
     
-    def checkblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False):
+    # form (0=around, 1=cross)
+    def getblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False, returnarray=False,form=0):
+        entity_array = []
+        form_cross_disallowed = [(-1,-1),(1,1),(-1,1),(1,-1)]
+
         for i in range(-1 * radius, radius + 1):
             for j in range(-1 * radius, radius + 1):
-                entity_coord = [sprite1.rect.x/50, sprite1.rect.y/50]
-                entity_coord_new = [a + b for a, b in zip(entity_coord, [i, j])]
-                entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
-                
-                if(isinstance(entity_around, sprite2type)):
-                    return (True if(not returnobject) else entity_around)
+                if(form == 0 or ((i, j) not in form_cross_disallowed and form == 1)):
+                    entity_coord = [sprite1.rect.x/50, sprite1.rect.y/50]
+                    entity_coord_new = [a + b for a, b in zip(entity_coord, [i, j])]
+                    entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
+                    
+                    if(isinstance(entity_around, sprite2type)):
+                        if(returnarray and returnobject):
+                            entity_array.append(entity_around)
+                        else:
+                            return (True if(not returnobject) else entity_around)
+        
+        return entity_array
 
     def assignblocks(self):
         global player
@@ -400,7 +415,7 @@ class main():
                     move_exec.clear()
                     player.move(key_name)
                     self.player_turn = (True if(player.steps > 0) else False)
-                    battle_enemy = drawmap.checkblocksaround(player, Orc, returnobject=True)
+                    battle_enemy = drawmap.getblocksaround(player, Orc, returnobject=True)
 
                     if(battle_enemy):
                         self.battlemode = True
@@ -432,6 +447,11 @@ class main():
                         self.battleenemy = None
 
         else:
+            for entities in entity_sprites.sprites():
+                entities.move_random() if(isinstance(entities, Orc)) else None
+
+            self.player_turn = True
+            self.dice_round_step_rolled = False
             print("monsters turn")
 
         if key_name == "escape":
