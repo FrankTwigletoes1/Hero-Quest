@@ -1,7 +1,9 @@
 ﻿import sys, pygame, options, os, random
 from enum import Enum
 
-screenSize = (int(1000), int(1000))
+screen_size_x = 1000
+screen_size_y = 1000
+screenSize = (screen_size_x, screen_size_y)
 
 player_sprites = pygame.sprite.Group() #Playeren
 middle_sprites = pygame.sprite.Group() # Alle sprites som aldrig bevægere sig men opdateres
@@ -9,6 +11,7 @@ background_sprites = pygame.sprite.Group() # Vægge, alle sprites som aldrig bev
 entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt måde
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
+time_exec = [] #Indeholder elementer som bliver executed efter et stykke tid
 
 class FIELDTYPE(Enum):
     NONE = None
@@ -18,6 +21,48 @@ class FIELDTYPE(Enum):
     WALL = "w"
     ROAD = "r"
     ORC = "o"
+
+#Render text
+# Renders text to the screen with a lot of customisation to choose from:
+# (required) font:          the font to use
+# (required) text:          the text string that should be drawn on the screen itself
+# (required) colour_rgb:    the text colour, please use either white (255,255,255) or black (0,0,0) for convenience
+# (optional) x:             the horizontal position of the text, none centers the text on screen
+# (optional) y:             the vertical position of the text, none centers the text on screen
+# (optional) offsetx:       how much the text should be moved left or right from its current position
+# (optional) offsety:       how much the text should be moved up or down from its current position
+# (optional) alignment:     how the text should be placed on screen in an easy manner, multiple can be used; left, right, top, bottom
+# (optional) effects:       what effects should be applied to the text, multiple can be used; bold, italic, underline
+# (optional) relative:      makes the text relative to another object in case of defined x and y value
+def render_text(display, font, text, color_rgb, x = None, y = None, offsetx = 0, offsety = 0, alignment=None, effects=None, relative = False):
+
+    # Draw effects if any are defined
+    if (effects is not None):
+        if ("bold" in effects):
+            font.set_bold(True)
+        if("italic" in effects):
+            font.set_italic()
+        if("underline" in effects):
+            font.set_underline(True)
+
+    # creates the font object and the x and y coordinates based on the arguments used
+    renderfont = font.render(text, True, color_rgb)
+    x = (screen_size_x / 2 - renderfont.get_width() / 2) if(x is None) else (x - renderfont.get_width() / 2) if(relative) else x # Text horizontal position: center | relative | absolute
+    y = (screen_size_y / 2 - renderfont.get_height() / 2) if (y is None) else (y - renderfont.get_height() / 2) if(relative) else y # Text vertical position: center | relative | absolute
+
+    # Aligns the text if any are defined
+    if(alignment is not None):
+        if("left" in alignment):
+            x = 0
+        elif("right" in alignment):
+            x = screen_size_x - renderfont.get_width()
+        if("top" in alignment):
+            y = 0
+        elif("bottom" in alignment):
+            y = screen_size_y - renderfont.get_height()
+
+    # Renders the text to screen
+    display.blit(renderfont, (x + offsetx, y + offsety))
 
 class Csprite(pygame.sprite.Sprite):
     def __init__(self,x,y,image):
@@ -69,38 +114,63 @@ class Door(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/door.png")
         self.locked = False
+        self.opened = False
+        self.solid = True
     
     def use(self):
-        self.open()
-        #move_exec.append(self.close)
+        if(not self.opened):
+            self.open()
+        else:
+            self.close()
     
     def open(self):
         self.image = pygame.image.load("sprites/open_door.png")
+        self.solid = False
+        self.opened = True
         
     def close(self):
         self.image = pygame.image.load("sprites/door.png")
         self.solid = True
-
-class Chest(Csprite):
-    def __init__(self,x,y):
-        pass
+        self.opened = False
 
 class Trap(Csprite):
     def __init__(self,x,y):
-        pass
+        super().__init__(x,y, "sprites/road.png")
+        self.solid = False
+        self.visible = False
+    
+    def release(self):
+        self.visible = True
+        self.image = pygame.image.load("sprites/trap.png")
+        player.damage(1)
+        player.frozen = True
+        time_exec.append({"start_time": pygame.time.get_ticks(), "delay": 1000, "func": self.destroy})
+    
+    def destroy(self):
+        player.frozen = False
+        self.kill()
+
+    def use(self):
+        if(not self.visible):
+            self.visible = True
+            self.image = pygame.image.load("sprites/trap.png")
+        else:
+            self.kill()
 
 class Orc(Csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/orc.png")
         self.health = 2
         self.solid = True
+        self.direction = "left"
     
     def move_random(self):
         open_areas_around = drawmap.getblocksaround(self, Road, returnobject=True, returnarray=True)
         random_area = random.choice(open_areas_around)
-        print(random_area)
-        print(random_area.rect.x)
-        self.move_to(random_area.rect.x/50, random_area.rect.y/50)
+        entity_area = drawmap.getblockfield(random_area.rect.x/50, random_area.rect.y/50)
+
+        if(isinstance(entity_area, Road)):
+            self.move_to(random_area.rect.x/50, random_area.rect.y/50)
     
     def hide(self):
         pass
@@ -118,6 +188,8 @@ class Player1(Csprite):
         self.health = 6
         self.attack = 1
         self.solid = True
+        self.frozen = False
+        self.direction = "left"
 
     def move(self, direction):
         image = pygame.image.load("sprites/player1Down.png")
@@ -127,7 +199,6 @@ class Player1(Csprite):
         
         if self.steps > 0:
             front_sprite = drawmap.getblockfront(self, direction)
-            front_sprite.use()
             collided = False
 
             if direction == "right" and self.rect.x+50 < screenSize[0]:
@@ -286,9 +357,11 @@ class map():
         diceObjs = list()
         doorObjs = list()
         orcObjs = list()
+        trapObjs = list()
         orcNum = 0
         doorNum = 0
         diceNum = 0
+        trapNum = 0
 
         for y in range(20):
             for x in range(20):
@@ -297,10 +370,15 @@ class map():
                     road = Road(x,y)
                     middle_sprites.add(road)
 
-                    if random.randint(1,20) == 1:
+                    if not bool(random.randint(0,20)):
                         orcObjs.append(Orc(x,y))
                         entity_sprites.add(orcObjs[orcNum])
                         orcNum += 1
+
+                    elif not bool(random.randint(0,50)):
+                        trapObjs.append(Trap(x,y))
+                        entity_sprites.add(trapObjs[trapNum])
+                        trapNum += 1
                     i += 1
                     
                 #Wall
@@ -361,17 +439,26 @@ class main():
         pygame.init()
         pygame.display.set_caption('Hero Quest Digital')
 
+        self.font_p1 = pygame.font.SysFont('Roboto', 100)
+        self.font_p2 = pygame.font.SysFont('Roboto', 80)
+        self.font_p3 = pygame.font.SysFont('Roboto', 60)
+        self.font_p4 = pygame.font.SysFont('Roboto', 40)
+        self.font_p5 = pygame.font.SysFont('Roboto', 20)
+
         self.game_screen = pygame.display.set_mode(screenSize)
         self.clock = pygame.time.Clock()
         self.fps = 60
         self.player_turn = True
         self.dice_round_step_rolled = False
         self.battlemode = False
+        self.bar_message = "Movement - Press 'r' to roll dice"
         self.prepare_test()
         self.loop()
 
     # Kører spillet i et loop indtil spilleren trykker esc, hvilket lukker spillet
     def loop(self):
+        global time_exec
+
         while True:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -385,9 +472,13 @@ class main():
             milliseconds = self.clock.tick(self.fps)
             seconds = milliseconds / 1000.0
             self.update(self.game_screen, seconds)
-
             sleep_time = (1000.0 / self.fps) - milliseconds
             pygame.time.wait(int(sleep_time)) if(sleep_time > 0.0) else pygame.time.wait(1)
+
+            for i in list(time_exec):
+                if(len(time_exec) and (i["start_time"] + i["delay"]) < pygame.time.get_ticks()):
+                    i["func"]()
+                    time_exec.remove(i)
     
     # Kode som skal køre inden game loop
     def prepare_test(self):
@@ -404,27 +495,42 @@ class main():
         middle_sprites.draw(self.game_screen)
         entity_sprites.draw(self.game_screen)
         player_sprites.draw(self.game_screen)
+        render_text(self.game_screen, self.font_p4, self.bar_message, (255,255,255), y=775)
+        render_text(self.game_screen, self.font_p4, "arrow keys = movement", (255,255,255), y=800, offsetx=10, alignment="left")
+        render_text(self.game_screen, self.font_p4, "r=dice roll", (255,255,255), y=835, offsetx=10, alignment="left")
+        render_text(self.game_screen, self.font_p4, "a=attack roll", (255,255,255), y=870, offsetx=10, alignment="left")
+        render_text(self.game_screen, self.font_p4, "e=use", (255,255,255), y=905, offsetx=10, alignment="left")
         pygame.display.update()
 
     def handle_input(self, key_name):
         if(self.player_turn):
             if(not self.battlemode):
-                if((key_name == "right" or key_name == "left" or key_name =="up" or key_name == "down") and self.dice_round_step_rolled):
+                if((key_name == "right" or key_name == "left" or key_name =="up" or key_name == "down") and self.dice_round_step_rolled and not player.frozen):
+                    front_sprite = drawmap.getblockfront(player, key_name)
                     for func in move_exec:
                         func()
                     move_exec.clear()
                     player.move(key_name)
+                    front_sprite.release() if(isinstance(front_sprite, Trap)) else None
                     self.player_turn = (True if(player.steps > 0) else False)
+                    self.bar_message = "Movement - Press 'r' to roll dice" if(not self.player_turn) else None
+                    self.handle_input(None) if(not self.player_turn) else None
                     battle_enemy = drawmap.getblocksaround(player, Orc, returnobject=True)
 
                     if(battle_enemy):
                         self.battlemode = True
                         self.battleenemy = battle_enemy
+                        self.bar_message = "In battle - Press 'a' to roll dice"
                 
                 if key_name == "r":
                     if(player.steps == 0):
                         player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
                         self.dice_round_step_rolled = True
+                        self.bar_message = ""
+                        background_sprites.draw(self.game_screen)
+                
+                if key_name == "e":
+                    drawmap.getblockfront(player, player.direction).use()
 
                 #debug output
                 if key_name == "p":
@@ -445,6 +551,8 @@ class main():
                         diceObjs[3].reset()
                         self.battlemode = False
                         self.battleenemy = None
+                        self.bar_message = ""
+                        background_sprites.draw(self.game_screen)
 
         else:
             for entities in entity_sprites.sprites():
@@ -452,14 +560,13 @@ class main():
 
             self.player_turn = True
             self.dice_round_step_rolled = False
-            print("monsters turn")
 
         if key_name == "escape":
             pygame.quit()
             sys.exit(0)
         
-        if key_name == 'h':
-            for x in orcObjs:
-                x.hide()
+        #if key_name == 'h':
+        #    for x in orcObjs:
+        #        x.hide()
 
 main()
