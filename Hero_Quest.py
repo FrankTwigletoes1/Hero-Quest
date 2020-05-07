@@ -77,6 +77,7 @@ class csprite(pygame.sprite.Sprite):
     def __init__(self,x,y,image, rotate=None):
         pygame.sprite.Sprite.__init__(self)
 
+        # Sætter objektets variabler
         self.image = pygame.image.load(image).convert()
         self.rect = self.image.get_rect()
         self.rect.x = x*50
@@ -84,6 +85,7 @@ class csprite(pygame.sprite.Sprite):
         self.solid = False
         self.image.set_colorkey((69,255,0))
 
+        # Roter spritens billede hvis defineret
         if(rotate is not None):
             self.image = pygame.transform.rotate(self.image, rotate)
     
@@ -112,6 +114,7 @@ class none(csprite):
     def __init__(self):
         pass
 
+# En menu baggrund for hvor spillerens informationer befinder sig i bund baren
 class backgroundmenutile(csprite):
     def __init__(self,x,y, rotate):
         super().__init__(x,y,"sprites/background.png", rotate)
@@ -126,6 +129,7 @@ class staircase(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/trappe.png")
 
+# En menu baggrund for bund baren 
 class background(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/baggrund.png")
@@ -221,20 +225,22 @@ class orc(csprite):
     def damage(self, damage):
         self.health -= damage
 
+        # Dræb ogren hvis den intet helbred har tilbage
         if(self.health <= 0):
             self.kill()
-    #Player objektet, protagonisten i spillet
+
+#Player objektet, protagonisten i spillet
 class player(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
-        self.steps = 0
-        self.health = 6
-        self.attack = 1
-        self.solid = True
-        self.frozen = False
-        self.direction = "left"
-        self.spawnpoint = self.get_pos()
-        self.goalpickup = False
+        self.steps = 0 # Antallet af trin tilbage spilleren kan flytte sig
+        self.health = 6 # Spillerens helbred
+        self.attack = 1 # Skaden spilleren giver til ogrene
+        self.solid = True # Spilleren er solid i forhold til andre objekter og omvendt
+        self.frozen = False # En frosset spiller kan ikke bevæge sig
+        self.direction = "left" # Hvilken retning spilleren vender
+        self.spawnpoint = self.get_pos() # Positionen på brættet spilleren startede
+        self.goalpickup = False # Har spilleren opsamlet kisten?
 
     #Bevægelse funktion som sørger tjekker om prøver at gå igennem en solid eller ej,
     #Den har direction som input altså om den vil gå op eller ned ad y og frem eller tilbage på x
@@ -242,6 +248,7 @@ class player(csprite):
         image = pygame.image.load("sprites/player1Down.png")
         self.direction = direction
         
+        # Flyt kun spilleren hvis der er flere trin tilbage
         if self.steps > 0:
             front_sprite = drawmap.getblockfront(self, direction)
             collided = False
@@ -285,24 +292,16 @@ class player(csprite):
             self.image = image
             self.image.set_colorkey((69,255,0))
             diceObjs[0].subtract(diceObjs[1].subtract()) if(not collided) else None
-    
-    def checkSight(self, x_0, y_0, x_1, y_1):
-        length = max(abs(x_1 - x_0), abs(y_1 - y_0))
-        for i in range(0, length):
-            t = float(i)/length
-
-            x = round(x_0 * (1.0 * t) + x_1 * t)
-            y = round(y_0 * (1.0 * t) + y_1 * t)
-            print(drawmap.getBlockField(x,y))
 
     #Bliver kaldt af orkerne når playeren skal skades.
     def damage(self, damage):
         self.health -= damage
 
-        #Class som håndtere terningerne som kastes når playeren skal have nye skridt.
+#Class som håndtere terningerne som kastes når playeren skal have nye skridt.
 class NumDice(csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
+
     #Bliver kaldet når playeren har bevæget sig og trækker et tal fra terningerne
     def subtract(self, dice=None):
         if(dice == None):
@@ -311,19 +310,23 @@ class NumDice(csprite):
                 self.image = (pygame.image.load("sprites/T_" + str(self.nr) + ".png") if(self.nr > 0) else pygame.image.load("sprites/T_start.png"))
                 return self
         return None
+
     #Bliver kaldet når playeren ruller med movement terningerne for at give flere playersteps
     def T_move(self):
         self.nr = random.randint(1,6)
         self.image = pygame.image.load("sprites/T_" + str(self.nr) + ".png")
         
         return self.nr
-    #Angribsterningerne
+
+#Angribsterningerne
 class Dice(csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
+
     #Resetter terningerne til deres default billede
     def reset(self):
         self.image = pygame.image.load("sprites/T_start.png")
+
     #Ruller terningnerne og returnere resultatet
     def roll(self):
         self.nr = random.randint(1,6)
@@ -339,7 +342,8 @@ class Dice(csprite):
             self.image = pygame.image.load("sprites/T_eveldeffet.png")
         
         return self.nr
-    #Objektet som står for map håndtering, altså indlæsning af map og hente data fra mappet
+
+#Objektet som står for map håndtering, altså indlæsning af map og hente data fra mappet
 class map():
 
     #Læser mappet fra en fil, tilemap baseret
@@ -351,26 +355,30 @@ class map():
                     if each != " ":
                         mapchars.append(each)
         return mapchars
+
     #Tjekker efter en sprite på et bestemt koordinat
     def getspritefromcoord(self, coord):
         sprite_list = [player_sprites, entity_sprites, middle_sprites, background_sprites]
+
         #Går igennem alle sprite typerne
         for sprite_type in sprite_list:
+
             #finder de individuelle sprites
             for sprite_individual in sprite_type.sprites():
                 if(sprite_individual.get_pos() == coord): # hvis spriten er på de bestemer koordinater så returner spriten
                     return sprite_individual
         
         return none()
+
     #Finder sprite på bestemt x og y koordinat i stedet for at tjekke alle koordinater ligesom getspritefromcoord
     def getblockfield(self, x, y):
         return self.getspritefromcoord(int(y * 20 + x))
     
-    # form (0=around, 1=cross)
-    #Finder alle blocks i enten en radius af 1 med blocks på tværs eller i et kryds.
+    # Finder alle blocks i enten en radius omkring et objekt eller i et kryds.
     def getblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False, returnarray=False, form=0):
         entity_array = []
         form_cross_disallowed = [(-1,-1),(1,1),(-1,1),(1,-1)]
+
 
         for i in range(-1 * radius, radius + 1):
             for j in range(-1 * radius, radius + 1):
@@ -388,13 +396,17 @@ class map():
                                 return (True if(not returnobject) else entity_around)
         
         return entity_array
+
     #pladsere tilemappet/alle blocks på mappet
     def assignblocks(self):
+
+        # Globale variabler tilgængeligt overalt
         global player
         global doorObjs
         global diceObjs
         global orcObjs
         
+        # Indlæser banen og sætter variabler som bruges ved genereringen af objekterne på kortet
         char = self.read("map.txt")
         i = 0
         goal_spawned = 0
@@ -409,6 +421,7 @@ class map():
         diceNum = 0
         trapNum = 0
         
+        # Looper igennem rækker og kolonner for kortet og skaber objekter for alle definitionerne afhængig af typen
         for y in range(20):
             for x in range(20):
 
@@ -416,11 +429,13 @@ class map():
                 if char[i] == "r":
                     middle_sprites.add(road(x,y))
 
+                    # Der er 1/20 chance for at en ogre starter her
                     if not bool(random.randint(0,20)):
                         orcObjs.append(orc(x,y))
                         entity_sprites.add(orcObjs[orcNum])
                         orcNum += 1
 
+                    # Der er 1/50 chance for at en usynlig fælde starter her
                     elif not bool(random.randint(0,50)):
                         trapObjs.append(trap(x,y))
                         entity_sprites.add(trapObjs[trapNum])
@@ -431,12 +446,12 @@ class map():
                     middle_sprites.add(road(x,y))
                     
                     # Skaber kisten med en sansynlighed på 1/4 hvis spilleren ikke allerede starter her eller hvis det er den næst sidste 
-                    if goal_spawned == 0 and spawnpoint_created != x_count and (random.randint(0,4) == 0 or x_count == 2):
+                    if goal_spawned == 0 and spawnpoint_created != x_count and (random.randint(0,1) == 0 or x_count == 2):
                         entity_sprites.add(chest(x,y))
                         goal_spawned = x_count
                     
                     # Skaber spilleren med en sansyndlighed på 1/4 hvis kisten ikke allerede starter her eller hvis det er den sidste position at kunne starte
-                    if spawnpoint_created == 0 and goal_spawned != x_count and (random.randint(0,4) == 0 or x_count == 3):
+                    if spawnpoint_created == 0 and goal_spawned != x_count and (random.randint(0,2) == 0 or x_count == 3):
                         entity_sprites.add(staircase(x,y))
                         spawnpoint_created = x_count
                         player = player(x,y)
@@ -445,36 +460,38 @@ class map():
                     # Tæller start positionen up
                     x_count += 1
                     
-                #wall
+                # Solide vægge ingen kan bevæge sig igennem
                 elif char[i] == "w":
                     background_sprites.add(wall(x,y))
 
-                #door
+                # Skaber døre som spilleren kan åbne/lukke og giver adgang til aflukkede områder
                 elif char[i] == "d":
                     doorObjs.append(door(x,y))
                     entity_sprites.add(doorObjs[doorNum])
                     doorNum += 1
 
-                #baggrund
+                # Skaber en baggrund for menu baren i bunden af skærmen hvor terningerne, tekst information og status fremgår
                 elif char[i] == "b" or char[i] == "q":
                     background_sprites.add(backgroundmenutile(x,y, (90 if(char[i] == "q") else None)))
 
-                #terning
+                # Skaber kamp terninger, som spilleren og ogre bruger til at slås med
                 elif char[i] == "t":
                     background_sprites.add(backgroundmenutile(x,y, None))
                     diceObjs.append(Dice(x,y))
                     entity_sprites.add(diceObjs[diceNum])
                     diceNum += 1
 
-                #terningNum  
+                # Skaber bevægelsesterninger for spilleren, hvor 
                 elif char[i] == "n":
                     background_sprites.add(backgroundmenutile(x,y, None))
                     diceObjs.append(NumDice(x,y))
                     entity_sprites.add(diceObjs[diceNum])
                     diceNum += 1
                 
+                # Tæller op antallet af objekter skabt
                 i += 1
     
+    # Retunere objektet i en bestemt retning i forhold til et andet f.eks. højre sprite for spilleren
     def getblockfront(self, entity, movement_direction):
         entity_coord = [entity.rect.x/50, entity.rect.y/50]
         entity_change_horizontal = 1 if(movement_direction == "right") else -1 if(movement_direction == "left") else 0
@@ -483,7 +500,10 @@ class map():
         
         return self.getblockfield(entity_coord_new[0], entity_coord_new[1])
 
+# Den primære spil klasse; opsætter, kører og sammenkobler de forskellige spil elementer der får det til at fungerer
 class main():
+
+    # Opsætter spillet og alle de vigtige lokale variabler
     def __init__(self):
         pygame.display.set_caption('Hero Quest Digital')
 
@@ -502,10 +522,10 @@ class main():
         self.prepare_test()
         self.loop()
 
-    # Kører spillet i et loop indtil spilleren trykker esc, hvilket lukker spillet
+    # Kører spillet i et loop indtil spilleren trykker esc eller spilleren dør, hvilket lukker spillet
     def loop(self):
         global time_exec
-
+        
         while self.game_running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
@@ -540,9 +560,13 @@ class main():
     # time sørger for adgang til sidste opdatering af skærm
     # door.entityUpdate()
     def update(self):
+
+        # Tegner alle sprite grupperne til skærmen
         middle_sprites.draw(self.game_screen)
         entity_sprites.draw(self.game_screen)
         player_sprites.draw(self.game_screen)
+
+        # Skriver tekst til skærmen med yderligere formattering der gør det let at kontrollerer
         render_text(self.game_screen, self.font_p4, self.bar_message, (255,255,255), offsety=-50, alignment="bottom")
         render_text(self.game_screen, self.font_p4, "health: " + str(player.health), (255,255,255), offsetx=70, offsety=-160, alignment="left, bottom")
         render_text(self.game_screen, self.font_p4, "damage: " + str(player.attack), (255,255,255), offsetx=70, offsety=-130, alignment="left, bottom")
@@ -554,6 +578,8 @@ class main():
         render_text(self.game_screen, self.font_p5, "r: dice roll", (255,255,255), offsetx=10, offsety=-40, alignment="left, bottom")
         render_text(self.game_screen, self.font_p5, "a: attack roll", (255,255,255), offsetx=10, offsety=-25, alignment="left, bottom")
         render_text(self.game_screen, self.font_p5, "e: use", (255,255,255), offsetx=10, offsety=-10, alignment="left, bottom")
+        
+        # Opdaterer spil displayed, hvilket tegner alle sprites til skærmen
         pygame.display.update()
 
     #Håndterer alle spiller input
@@ -569,23 +595,38 @@ class main():
 
             # Hvis spilleren ikke er i en kamp mod en ogre
             if(not self.battlemode):
+
+                # Trykker spilleren piletasterne, og samtidig har rullet bevægelsesterningerne og ikke er fråset af en fælde, flyt spilleren hvis muligt
                 if((key_name == "right" or key_name == "left" or key_name =="up" or key_name == "down") and self.dice_round_step_rolled and not player.frozen):
-                    front_sprite = drawmap.getblockfront(player, key_name)
+
+                    # Kør funktioner som skal kaldes når spilleren bevæger sig
+                    # For eksempel en spiller kan have åbnet en dør som skal lukke automatisk efterfølgende
                     for func in move_exec:
                         func()
                     move_exec.clear()
-                    player.move(key_name)
+
+                    # Få spriten som spilleren skal til at træde på, er det en fælde så aktiver den
+                    front_sprite = drawmap.getblockfront(player, key_name)
                     front_sprite.release() if(isinstance(front_sprite, trap)) else None
+
+                    # Test og flyt spilleren hvis muligt
+                    player.move(key_name)
+
+                    # Hvis spilleren ikke har flere trin tilbage fra bevægelsesterningerne, oplys spilleren
                     self.player_turn = (True if(player.steps > 0) else False)
                     self.bar_message = "Movement - Press 'r' to roll dice" if(not self.player_turn) else None
                     self.handle_input(None) if(not self.player_turn) else None
-                    battle_enemy = drawmap.getblocksaround(player, orc, returnobject=True, form=1)
 
+                    # Check efter ogre omkring spilleren, checker i form at et krys
+                    battle_enemy = drawmap.getblocksaround(player, orc, returnobject=True, form=1)
+                    
+                    # Har spilleren stødt på en ogre, start en kamp
                     if(battle_enemy):
                         self.battlemode = True
                         self.battleenemy = battle_enemy
                         self.bar_message = "In battle - Press 'a' to roll dice"
                     
+                    # Er spilleren ved spawn med kisten opsamlet, spilleren vinder!, afslut spillet
                     elif(player.spawnpoint == player.get_pos() and player.goalpickup):
                         self.game_running = False
                 
@@ -600,6 +641,8 @@ class main():
                 
                 # Trykker bruger knappen 'e' for at bruge objektet foran spillerens karakter
                 if key_name == "e":
+
+                    # Finder objektet foran spilleren og ser om spilleren kan bruge det
                     sprite_use = drawmap.getblockfront(player, player.direction)
                     sprite_use.use()
 
@@ -611,13 +654,20 @@ class main():
             # Hvis spilleren ér i en kamp mod en ogre
             else:
                 if key_name == "a":
+
+                    # Kaster kamp terningerne for spilleren og ogren 
                     player_roll = diceObjs[2].roll()
                     enemy_roll = diceObjs[3].roll()
+
+                    # skade < 4, beskyt = 5-6
                     player.damage(1) if(enemy_roll < 4 and (enemy_roll != 4 or enemy_roll != 5)) else None
                     self.battleenemy.damage(1) if(player_roll < 4 and (player_roll != 4 or player_roll != 5)) else None
                     
+                    # Hvis spillerens helbred er nul, luk spillet
                     if(player.health == 0):
                         self.game_running = False
+                    
+                    # Hvis ogrens helbred er nul, nulstil kamp terningerne og fjern kamp modus
                     elif(self.battleenemy.health == 0):
                         diceObjs[2].reset()
                         diceObjs[3].reset()
@@ -628,10 +678,14 @@ class main():
 
         # Hvis det er computerens (ogre) tur
         else:
+
+            # Flytter alle ogrene tilfældigt på skærmen
             for entities in entity_sprites.sprites():
                 entities.move_random() if(isinstance(entities, orc)) else None
             
+            # Gensætter variablerne, indikerer det er spillerens tur og at spilleren kan kaste bevægelsesterningerne igen
             self.player_turn = True
             self.dice_round_step_rolled = False
 
+# Skaber et spil objekt
 main()
