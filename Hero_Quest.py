@@ -121,6 +121,11 @@ class road(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/road.png")
 
+# En ikke-solid trappe, alle objekter med funktioner kan stå her go er hvor spilleren starter
+class staircase(csprite):
+    def __init__(self,x,y):
+        super().__init__(x,y,"sprites/trappe.png")
+
 class background(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/baggrund.png")
@@ -392,9 +397,9 @@ class map():
         
         char = self.read("map.txt")
         i = 0
-        goal_spawned = False
-        goal_spawncount = 0
-        spawnpoint_created = False
+        goal_spawned = 0
+        spawnpoint_created = 0
+        x_count = 0
         diceObjs = list()
         doorObjs = list()
         orcObjs = list()
@@ -407,7 +412,7 @@ class map():
         for y in range(20):
             for x in range(20):
 
-                #road
+                # Skaber vejene som elementer kan starte på og spilleren/ogre kan bevæge sig rundt på
                 if char[i] == "r":
                     middle_sprites.add(road(x,y))
 
@@ -421,15 +426,24 @@ class map():
                         entity_sprites.add(trapObjs[trapNum])
                         trapNum += 1
 
-                #chest 
+                # Skaber kisten og trappen hvor spilleren starter, tilfældig indenfor 4 forskellige positioner
                 elif char[i] == "x":
                     middle_sprites.add(road(x,y))
-                    goal_spawncount += 1
-
-                    if not goal_spawned and (not bool(random.randint(0,4)) or goal_spawncount == 4):
+                    
+                    # Skaber kisten med en sansynlighed på 1/4 hvis spilleren ikke allerede starter her eller hvis det er den næst sidste 
+                    if goal_spawned == 0 and spawnpoint_created != x_count and (random.randint(0,4) == 0 or x_count == 2):
                         entity_sprites.add(chest(x,y))
-                        goal_spawned = True
-                        goal_spawncount = -1
+                        goal_spawned = x_count
+                    
+                    # Skaber spilleren med en sansyndlighed på 1/4 hvis kisten ikke allerede starter her eller hvis det er den sidste position at kunne starte
+                    if spawnpoint_created == 0 and goal_spawned != x_count and (random.randint(0,4) == 0 or x_count == 3):
+                        entity_sprites.add(staircase(x,y))
+                        spawnpoint_created = x_count
+                        player = player(x,y)
+                        player_sprites.add(player)
+                    
+                    # Tæller start positionen up
+                    x_count += 1
                     
                 #wall
                 elif char[i] == "w":
@@ -440,12 +454,6 @@ class map():
                     doorObjs.append(door(x,y))
                     entity_sprites.add(doorObjs[doorNum])
                     doorNum += 1
-
-                #player
-                elif char[i] == "p":
-                    middle_sprites.add(road(x,y))
-                    player = player(x,y)
-                    player_sprites.add(player)
 
                 #baggrund
                 elif char[i] == "b" or char[i] == "q":
