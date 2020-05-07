@@ -7,7 +7,7 @@ class null():
     def write(self, arg):
         pass
 
-if debug:
+if not debug:
     sys.stdout = null()
 
 #Starter pygame 
