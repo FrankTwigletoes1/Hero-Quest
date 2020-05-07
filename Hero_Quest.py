@@ -7,7 +7,7 @@ class null():
     def write(self, arg):
         pass
 
-if debug:
+if not debug:
     sys.stdout = null()
 
 #Starter pygame 
@@ -181,12 +181,15 @@ class orc(csprite):
     
     # Bevæger ogren til et tilfældig område af otte fælder omkring sig hvor der er plads (vej)
     def move_random(self):
-        open_areas_around = drawmap.getblocksaround(self, road, returnobject=True, returnarray=True)
-        random_area = random.choice(open_areas_around)
-        entity_area = drawmap.getblockfield(random_area.rect.x/50, random_area.rect.y/50)
-
-        if(isinstance(entity_area, road)):
-            self.move_to(random_area.rect.x/50, random_area.rect.y/50)
+        try:
+            open_areas_around = drawmap.getblocksaround(self, road, returnobject=True, returnarray=True)
+            random_area = random.choice(open_areas_around)
+            entity_area = drawmap.getblockfield(random_area.rect.x/50, random_area.rect.y/50)
+            if(isinstance(entity_area, road)):
+                self.move_to(random_area.rect.x/50, random_area.rect.y/50)
+        except:
+            print('Movement error')
+            None
 
     # Skader ogren
     def damage(self, damage):
