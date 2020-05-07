@@ -74,7 +74,7 @@ def render_text(display, font, text, color_rgb, x = None, y = None, offsetx = 0,
 #Virker som et blueprint på hvordan vores sprite objekter er bygget op som vi kan referer til
 #Når refere til csprite så arver objektet vi refere i, alle variablerne fra csprite
 class csprite(pygame.sprite.Sprite):
-    def __init__(self,x,y,image):
+    def __init__(self,x,y,image, rotate=None):
         pygame.sprite.Sprite.__init__(self)
 
         self.image = pygame.image.load(image).convert()
@@ -83,6 +83,9 @@ class csprite(pygame.sprite.Sprite):
         self.rect.y = y*50
         self.solid = False
         self.image.set_colorkey((69,255,0))
+
+        if(rotate is not None):
+            self.image = pygame.transform.rotate(self.image, rotate)
     
     # Retunerer et objekts position i verdenen i forhold til strukturen af mapfilen
     # Hvert bane er opbygget i et 20x20 grid hvor hvert sprite i rækken læses fra venstre mod højre, oppe til ned
@@ -110,8 +113,8 @@ class none(csprite):
         pass
 
 class backgroundmenutile(csprite):
-    def __init__(self,x,y):
-        super().__init__(x,y,"sprites/background.png")
+    def __init__(self,x,y, rotate):
+        super().__init__(x,y,"sprites/background.png", rotate)
 
 # En ikke-solid vej, alle objekter med funktioner kan stå her
 class road(csprite):
@@ -231,8 +234,6 @@ class player(csprite):
     def move(self, direction):
         image = pygame.image.load("sprites/player1Down.png")
         self.direction = direction
-
-        print("steps: " + str(self.steps))
         
         if self.steps > 0:
             front_sprite = drawmap.getblockfront(self, direction)
@@ -385,6 +386,7 @@ class map():
         i = 0
         goal_spawned = False
         goal_spawncount = 0
+        spawnpoint_created = False
         diceObjs = list()
         doorObjs = list()
         orcObjs = list()
@@ -438,19 +440,19 @@ class map():
                     player_sprites.add(player)
 
                 #baggrund
-                elif char[i] == "b":
-                    background_sprites.add(backgroundmenutile(x,y))
+                elif char[i] == "b" or char[i] == "q":
+                    background_sprites.add(backgroundmenutile(x,y, (90 if(char[i] == "q") else None)))
 
                 #terning
                 elif char[i] == "t":
-                    background_sprites.add(backgroundmenutile(x,y))
+                    background_sprites.add(backgroundmenutile(x,y, None))
                     diceObjs.append(Dice(x,y))
                     entity_sprites.add(diceObjs[diceNum])
                     diceNum += 1
 
                 #terningNum  
                 elif char[i] == "n":
-                    background_sprites.add(backgroundmenutile(x,y))
+                    background_sprites.add(backgroundmenutile(x,y, None))
                     diceObjs.append(NumDice(x,y))
                     entity_sprites.add(diceObjs[diceNum])
                     diceNum += 1
@@ -496,6 +498,7 @@ class main():
 
                 if event.type == pygame.KEYDOWN:
                     self.handle_input(pygame.key.name(event.key))
+                    background_sprites.draw(self.game_screen)
 
             self.update()
 
@@ -525,6 +528,9 @@ class main():
         entity_sprites.draw(self.game_screen)
         player_sprites.draw(self.game_screen)
         render_text(self.game_screen, self.font_p4, self.bar_message, (255,255,255), offsety=-50, alignment="bottom")
+        render_text(self.game_screen, self.font_p4, "health: " + str(player.health), (255,255,255), offsetx=70, offsety=-160, alignment="left, bottom")
+        render_text(self.game_screen, self.font_p4, "damage: " + str(player.attack), (255,255,255), offsetx=70, offsety=-130, alignment="left, bottom")
+        render_text(self.game_screen, self.font_p4, "facing: " + player.direction, (255,255,255), offsetx=70, offsety=-100, alignment="left, bottom")
         render_text(self.game_screen, self.font_p5, "movement dice", (255,255,255), offsetx=-305, offsety=-200, alignment="right, bottom")
         render_text(self.game_screen, self.font_p5, "player attack dice", (255,255,255), offsetx=-70, offsety=-200, alignment="right, bottom")
         render_text(self.game_screen, self.font_p5, "enemy attack dice", (255,255,255), offsetx=-70, offsety=-100, alignment="right, bottom")
@@ -575,7 +581,6 @@ class main():
                         player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
                         self.dice_round_step_rolled = True
                         self.bar_message = ""
-                        background_sprites.draw(self.game_screen)
                 
                 # Trykker bruger knappen 'e' for at bruge objektet foran spillerens karakter
                 if key_name == "e":
@@ -595,7 +600,9 @@ class main():
                     player.damage(1) if(enemy_roll < 4 and (enemy_roll != 4 or enemy_roll != 5)) else None
                     self.battleenemy.damage(1) if(player_roll < 4 and (player_roll != 4 or player_roll != 5)) else None
                     
-                    if(player.health == 0 or self.battleenemy.health == 0):
+                    if(player.health == 0):
+                        self.game_running = False
+                    elif(self.battleenemy.health == 0):
                         diceObjs[2].reset()
                         diceObjs[3].reset()
                         self.battlemode = False
