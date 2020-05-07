@@ -1,12 +1,22 @@
-﻿import sys, pygame, options, os, random
-from enum import Enum
+﻿#Importerer de forskellige biblioteker brugt i programmet
+import sys, pygame, options, os, random
 
+#Slå debug beskeder fra eller til
+debug = False
+class null():
+    def write(self, arg):
+        pass
+
+if debug:
+    sys.stdout = null()
+
+#Starter pygame 
 pygame.init()
 pygame.font.init()
 
 screen_size_x = 1000
 screen_size_y = 1000
-screenSize = (screen_size_x, screen_size_y)
+screensize = (screen_size_x, screen_size_y)
 
 player_sprites = pygame.sprite.Group() #Playeren
 middle_sprites = pygame.sprite.Group() # Alle sprites som aldrig bevægere sig men opdateres
@@ -15,15 +25,6 @@ entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt må
 
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
 time_exec = [] #Indeholder elementer som bliver executed efter et stykke tid
-
-class FIELDTYPE(Enum):
-    NONE = None
-    BACKGROUND = "b"
-    DOOR = "d"
-    PLAYER = "p"
-    WALL = "w"
-    ROAD = "r"
-    ORC = "o"
 
 #Render text
 # Renders text to the screen with a lot of customisation to choose from:
@@ -67,12 +68,13 @@ def render_text(display, font, text, color_rgb, x = None, y = None, offsetx = 0,
     # Renders the text to screen
     display.blit(renderfont, (x + offsetx, y + offsety))
 
-class Csprite(pygame.sprite.Sprite):
+#Virker som et blueprint på hvordan vores sprite objekter er bygget op som vi kan referer til
+#Når refere til csprite så arver objektet vi refere i, alle variablerne fra csprite
+class csprite(pygame.sprite.Sprite):
     def __init__(self,x,y,image):
         pygame.sprite.Sprite.__init__(self)
 
         self.image = pygame.image.load(image).convert()
-
         self.rect = self.image.get_rect()
         self.rect.x = x*50
         self.rect.y = y*50
@@ -92,28 +94,37 @@ class Csprite(pygame.sprite.Sprite):
     def __str__(self):
         return self.__class__.__name__
 
-class none(Csprite):
+class none(csprite):
     def __init__(self):
         pass
 
-class BackgroundMenuTile(Csprite):
+class backgroundmenutile(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/background.png")
 
-class Road(Csprite):
+class road(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/road.png")
 
-class Background(Csprite):
+class background(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/baggrund.png")
 
-class Wall(Csprite):
+class wall(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/wall.png")
         self.solid = True
 
-class Door(Csprite):
+class chest(csprite):
+    def __init__(self,x,y):
+        super().__init__(x,y,"sprites/chest.png")
+        self.solid = True
+    
+    def use(self):
+        player.goalpickup = True
+        self.kill()
+
+class door(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/door.png")
         self.locked = False
@@ -136,7 +147,7 @@ class Door(Csprite):
         self.solid = True
         self.opened = False
 
-class Trap(Csprite):
+class trap(csprite):
     def __init__(self,x,y):
         super().__init__(x,y, "sprites/road.png")
         self.solid = False
@@ -160,31 +171,31 @@ class Trap(Csprite):
         else:
             self.kill()
 
-class Orc(Csprite):
+# En ogre, fjende imod spilleren
+class orc(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/orc.png")
         self.health = 2
         self.solid = True
         self.direction = "left"
     
+    # Bevæger ogren til et tilfældig område af otte fælder omkring sig hvor der er plads (vej)
     def move_random(self):
-        open_areas_around = drawmap.getblocksaround(self, Road, returnobject=True, returnarray=True)
+        open_areas_around = drawmap.getblocksaround(self, road, returnobject=True, returnarray=True)
         random_area = random.choice(open_areas_around)
         entity_area = drawmap.getblockfield(random_area.rect.x/50, random_area.rect.y/50)
 
-        if(isinstance(entity_area, Road)):
+        if(isinstance(entity_area, road)):
             self.move_to(random_area.rect.x/50, random_area.rect.y/50)
-    
-    def hide(self):
-        pass
 
+    # Skader ogren
     def damage(self, damage):
         self.health -= damage
 
         if(self.health <= 0):
             self.kill()
     
-class Player1(Csprite):
+class player(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
         self.steps = 0
@@ -193,6 +204,8 @@ class Player1(Csprite):
         self.solid = True
         self.frozen = False
         self.direction = "left"
+        self.spawnpoint = self.get_pos()
+        self.goalpickup = False
 
     def move(self, direction):
         image = pygame.image.load("sprites/player1Down.png")
@@ -204,11 +217,10 @@ class Player1(Csprite):
             front_sprite = drawmap.getblockfront(self, direction)
             collided = False
 
-            if direction == "right" and self.rect.x+50 < screenSize[0]:
+            if direction == "right" and self.rect.x+50 < screensize[0]:
                 image = pygame.image.load("sprites/player1Right.png")
                 self.rect.x = self.rect.x+50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
-                    print("Collided")
                     collided = True
                     self.rect.x = self.rect.x-50
                 else:
@@ -218,7 +230,6 @@ class Player1(Csprite):
                 image = pygame.image.load("sprites/player1Left.png")
                 self.rect.x = self.rect.x-50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
-                    print("Collided")
                     collided = True
                     self.rect.x = self.rect.x+50
                 else:
@@ -228,17 +239,15 @@ class Player1(Csprite):
                 image = pygame.image.load("sprites/player1Up.png")
                 self.rect.y = self.rect.y-50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
-                    print("Collided")
                     collided = True
                     self.rect.y = self.rect.y+50
                 else:
                     self.steps -= 1
             
-            elif direction == "down" and not self.rect.y-50 > screenSize[1]-400:
+            elif direction == "down" and not self.rect.y-50 > screensize[1]-400:
                 image = pygame.image.load("sprites/player1Down.png")
                 self.rect.y = self.rect.y+50
                 if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
-                    print("Collided")
                     collided = True
                     self.rect.y = self.rect.y-50
                 else:
@@ -260,12 +269,9 @@ class Player1(Csprite):
     def damage(self, damage):
         self.health -= damage
 
-class NumDice(Csprite):
+class NumDice(csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
-    
-    def reset(self):
-        self.image = pygame.image.load("sprites/T_start.png")
     
     def subtract(self, dice=None):
         if(dice == None):
@@ -275,13 +281,13 @@ class NumDice(Csprite):
                 return self
         return None
 
-    def T_move (self):
+    def T_move(self):
         self.nr = random.randint(1,6)
         self.image = pygame.image.load("sprites/T_" + str(self.nr) + ".png")
         
         return self.nr
 
-class Dice(Csprite):
+class Dice(csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
 
@@ -306,14 +312,11 @@ class Dice(Csprite):
 class map():
     def read(self, file):
         mapchars = []
-        self.doorNum = 1
         with open(file, "r") as f:
             for line in f:
                 for each in line.rstrip("\n"):
                     if each != " ":
                         mapchars.append(each)
-                        if each == FIELDTYPE.DOOR:
-                            self.doorNum += 1
         return mapchars
 
     def getspritefromcoord(self, coord):
@@ -360,6 +363,8 @@ class map():
         
         char = self.read("map.txt")
         i = 0
+        goal_spawned = False
+        goal_spawncount = 0
         diceObjs = list()
         doorObjs = list()
         orcObjs = list()
@@ -371,66 +376,66 @@ class map():
 
         for y in range(20):
             for x in range(20):
-                #Road
+
+                #road
                 if char[i] == "r":
-                    road = Road(x,y)
-                    middle_sprites.add(road)
+                    middle_sprites.add(road(x,y))
 
                     if not bool(random.randint(0,20)):
-                        orcObjs.append(Orc(x,y))
+                        orcObjs.append(orc(x,y))
                         entity_sprites.add(orcObjs[orcNum])
                         orcNum += 1
 
                     elif not bool(random.randint(0,50)):
-                        trapObjs.append(Trap(x,y))
+                        trapObjs.append(trap(x,y))
                         entity_sprites.add(trapObjs[trapNum])
                         trapNum += 1
-                    i += 1
-                    
-                #Wall
-                elif char[i] == "w":
-                    wall = Wall(x,y)
-                    background_sprites.add(wall)
-                    i += 1
 
-                #Door
+                #chest 
+                elif char[i] == "x":
+                    middle_sprites.add(road(x,y))
+                    goal_spawncount += 1
+
+                    if not goal_spawned and (not bool(random.randint(0,4)) or goal_spawncount == 4):
+                        entity_sprites.add(chest(x,y))
+                        goal_spawned = True
+                        goal_spawncount = -1
+                    
+                #wall
+                elif char[i] == "w":
+                    background_sprites.add(wall(x,y))
+
+                #door
                 elif char[i] == "d":
-                    doorObjs.append(Door(x,y))
+                    doorObjs.append(door(x,y))
                     entity_sprites.add(doorObjs[doorNum])
                     doorNum += 1
-                    i += 1
 
                 #player
                 elif char[i] == "p":
-                    road = Road(x,y)
-                    middle_sprites.add(road)
-                    player = Player1(x,y)
+                    middle_sprites.add(road(x,y))
+                    player = player(x,y)
                     player_sprites.add(player)
-                    i += 1
 
                 #baggrund
                 elif char[i] == "b":
-                    backgroundTile = BackgroundMenuTile(x,y)
-                    background_sprites.add(backgroundTile)
-                    i += 1
+                    background_sprites.add(backgroundmenutile(x,y))
 
                 #terning
                 elif char[i] == "t":
-                    backgroundTile = BackgroundMenuTile(x,y)
-                    background_sprites.add(backgroundTile)
+                    background_sprites.add(backgroundmenutile(x,y))
                     diceObjs.append(Dice(x,y))
                     entity_sprites.add(diceObjs[diceNum])
                     diceNum += 1
-                    i += 1
 
                 #terningNum  
                 elif char[i] == "n":
-                    backgroundTile = BackgroundMenuTile(x,y)
-                    background_sprites.add(backgroundTile)
+                    background_sprites.add(backgroundmenutile(x,y))
                     diceObjs.append(NumDice(x,y))
                     entity_sprites.add(diceObjs[diceNum])
                     diceNum += 1
-                    i += 1
+                
+                i += 1
     
     def getblockfront(self, entity, movement_direction):
         entity_coord = [entity.rect.x/50, entity.rect.y/50]
@@ -449,10 +454,10 @@ class main():
         self.font_p3 = pygame.font.SysFont('Roboto', 60)
         self.font_p4 = pygame.font.SysFont('Roboto', 40)
         self.font_p5 = pygame.font.SysFont('Roboto', 20)
-        self.game_screen = pygame.display.set_mode(screenSize)
+        self.game_screen = pygame.display.set_mode(screensize)
         self.clock = pygame.time.Clock()
-        self.fps = 60
         self.player_turn = True
+        self.game_running = True
         self.dice_round_step_rolled = False
         self.battlemode = False
         self.bar_message = "Movement - Press 'r' to roll dice"
@@ -463,7 +468,7 @@ class main():
     def loop(self):
         global time_exec
 
-        while True:
+        while self.game_running:
             for event in pygame.event.get():
                 if event.type == pygame.QUIT:
                     pygame.quit()
@@ -472,15 +477,16 @@ class main():
                 if event.type == pygame.KEYDOWN:
                     self.handle_input(pygame.key.name(event.key))
 
-            milliseconds = self.clock.tick(self.fps)
-            seconds = milliseconds / 1000.0
-            self.update(self.game_screen, seconds)
-            sleep_time = (1000.0 / self.fps) - milliseconds
-            pygame.time.wait(int(sleep_time)) if(sleep_time > 0.0) else pygame.time.wait(1)
+            self.update()
 
             for i in list(time_exec):
                 if(len(time_exec) and (i["start_time"] + i["delay"]) < pygame.time.get_ticks()):
-                    i["func"]()
+                    if("func" in i):
+                        i["func"]()
+
+                    elif("var" in i):
+                        i["var"] = i["value"]
+
                     time_exec.remove(i)
     
     # Kode som skal køre inden game loop
@@ -494,7 +500,7 @@ class main():
     # screen for at kunne få adgang til "surface"
     # time sørger for adgang til sidste opdatering af skærm
     # door.entityUpdate()
-    def update(self, screen, time):
+    def update(self):
         middle_sprites.draw(self.game_screen)
         entity_sprites.draw(self.game_screen)
         player_sprites.draw(self.game_screen)
@@ -508,8 +514,18 @@ class main():
         render_text(self.game_screen, self.font_p5, "e: use", (255,255,255), offsetx=10, offsety=-10, alignment="left, bottom")
         pygame.display.update()
 
+    #Håndterer alle spiller input
     def handle_input(self, key_name):
+
+        # Hvis spilleren trykker escape, luk spillet
+        if key_name == "escape":
+            pygame.quit()
+            sys.exit(0)
+
+        # Hvis det er spillerens tur
         if(self.player_turn):
+
+            # Hvis spilleren ikke er i en kamp mod en ogre
             if(not self.battlemode):
                 if((key_name == "right" or key_name == "left" or key_name =="up" or key_name == "down") and self.dice_round_step_rolled and not player.frozen):
                     front_sprite = drawmap.getblockfront(player, key_name)
@@ -517,40 +533,47 @@ class main():
                         func()
                     move_exec.clear()
                     player.move(key_name)
-                    front_sprite.release() if(isinstance(front_sprite, Trap)) else None
+                    front_sprite.release() if(isinstance(front_sprite, trap)) else None
                     self.player_turn = (True if(player.steps > 0) else False)
                     self.bar_message = "Movement - Press 'r' to roll dice" if(not self.player_turn) else None
                     self.handle_input(None) if(not self.player_turn) else None
-                    battle_enemy = drawmap.getblocksaround(player, Orc, returnobject=True)
+                    battle_enemy = drawmap.getblocksaround(player, orc, returnobject=True, form=1)
 
                     if(battle_enemy):
                         self.battlemode = True
                         self.battleenemy = battle_enemy
                         self.bar_message = "In battle - Press 'a' to roll dice"
+                    
+                    elif(player.spawnpoint == player.get_pos() and player.goalpickup):
+                        self.game_running = False
                 
+                # Hvis spilleren trykker 'r' tasten, genkaster terningerne
                 if key_name == "r":
+
+                    # Giv kun tilladelse til at kaste terningerne hvis man ikke har flere trin tilbage
                     if(player.steps == 0):
                         player.steps = diceObjs[0].T_move() + diceObjs[1].T_move()
                         self.dice_round_step_rolled = True
                         self.bar_message = ""
                         background_sprites.draw(self.game_screen)
                 
+                # Trykker bruger knappen 'e' for at bruge objektet foran spillerens karakter
                 if key_name == "e":
-                    drawmap.getblockfront(player, player.direction).use()
+                    sprite_use = drawmap.getblockfront(player, player.direction)
+                    sprite_use.use()
 
-                #debug output
-                if key_name == "p":
-                    print(diceObjs)
-                    print(doorObjs)
-                    print(pygame.sprite.groupcollide(player_sprites, entity_sprites, False, False))
-                    print(background_sprites.sprites())
+                    # Hvis objektet er en kiste, giv en besked om hvordan man vinder
+                    if(isinstance(sprite_use, chest)):
+                        self.bar_message = "Chest taken - Get to spawnpoint for victory!"
+                        time_exec.append({"start_time": pygame.time.get_ticks(), "delay": 2000, "var": self.bar_message, "value": ""})
+
+            # Hvis spilleren ér i en kamp mod en ogre
             else:
                 if key_name == "a":
                     player_roll = diceObjs[2].roll()
                     enemy_roll = diceObjs[3].roll()
                     player.damage(1) if(enemy_roll < 4 and (enemy_roll != 4 or enemy_roll != 5)) else None
                     self.battleenemy.damage(1) if(player_roll < 4 and (player_roll != 4 or player_roll != 5)) else None
-                    print("phealth: " + str(player.health) + ", ehealth:" + str(self.battleenemy.health))
                     
                     if(player.health == 0 or self.battleenemy.health == 0):
                         diceObjs[2].reset()
@@ -560,19 +583,12 @@ class main():
                         self.bar_message = ""
                         background_sprites.draw(self.game_screen)
 
+        # Hvis det er computerens (ogre) tur
         else:
             for entities in entity_sprites.sprites():
-                entities.move_random() if(isinstance(entities, Orc)) else None
-
+                entities.move_random() if(isinstance(entities, orc)) else None
+            
             self.player_turn = True
             self.dice_round_step_rolled = False
-
-        if key_name == "escape":
-            pygame.quit()
-            sys.exit(0)
-        
-        #if key_name == 'h':
-        #    for x in orcObjs:
-        #        x.hide()
 
 main()
