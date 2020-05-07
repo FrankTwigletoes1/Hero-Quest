@@ -14,15 +14,18 @@ if debug:
 pygame.init()
 pygame.font.init()
 
+# Definerer spillets vindues størrelse
 screen_size_x = 1000
 screen_size_y = 1000
 screensize = (screen_size_x, screen_size_y)
 
+# Sprite grupper der hver især indeholder forskellige typer af sprites adskildt af funktionalitet
 player_sprites = pygame.sprite.Group() #Playeren
 middle_sprites = pygame.sprite.Group() # Alle sprites som aldrig bevægere sig men opdateres
 background_sprites = pygame.sprite.Group() # Vægge, alle sprites som aldrig bevæger sig eller skal opdateres
 entity_sprites = pygame.sprite.Group() #Sprites som opdateres på en bestemt måde
 
+# Globale variabler der indeholder variabler der skal sættes eller funktioner som skal kaldes ved specielle serværdigheder
 move_exec = [] #Indeholder elementer som bliver executed når player bevæger sig f.eks. en dør lukker
 time_exec = [] #Indeholder elementer som bliver executed efter et stykke tid
 
@@ -40,7 +43,7 @@ time_exec = [] #Indeholder elementer som bliver executed efter et stykke tid
 # (optional) relative:      makes the text relative to another object in case of defined x and y value
 def render_text(display, font, text, color_rgb, x = None, y = None, offsetx = 0, offsety = 0, alignment=None, effects=None, relative = False):
 
-    # Draw effects if any are defined
+    # Tegner effekter på teksten hvis noget er blevet defineret
     if (effects is not None):
         if ("bold" in effects):
             font.set_bold(True)
@@ -49,7 +52,7 @@ def render_text(display, font, text, color_rgb, x = None, y = None, offsetx = 0,
         if("underline" in effects):
             font.set_underline(True)
 
-    # creates the font object and the x and y coordinates based on the arguments used
+    # Skaber font objektet og x og y koordinaterne baseret på argumenterne brugt
     renderfont = font.render(text, True, color_rgb)
     x = (screen_size_x / 2 - renderfont.get_width() / 2) if(x is None) else (x - renderfont.get_width() / 2) if(relative) else x # Text horizontal position: center | relative | absolute
     y = (screen_size_y / 2 - renderfont.get_height() / 2) if (y is None) else (y - renderfont.get_height() / 2) if(relative) else y # Text vertical position: center | relative | absolute
@@ -81,19 +84,27 @@ class csprite(pygame.sprite.Sprite):
         self.solid = False
         self.image.set_colorkey((69,255,0))
     
+    # Retunerer et objekts position i verdenen i forhold til strukturen af mapfilen
+    # Hvert bane er opbygget i et 20x20 grid hvor hvert sprite i rækken læses fra venstre mod højre, oppe til ned
+    # Objekt (2,2) ville derfor være 2*20 + 2 = 42'erne objekt i rækken fra top-venstre hjørne
     def get_pos(self):
         return int(self.rect.y/50 * 20 + self.rect.x/50)
     
+    # Fallback, da alle objekter kan teknisk set bruges af spilleren, selvom at som standard alle objekter har ingen funktion
+    # Bruges når spilleren bruger et objekt med ingen funktionalitet
     def use(self):
         pass
 
+    # Flytter et objekt til denne given position på brættet
     def move_to(self, x, y):
         self.rect.x = x*50
         self.rect.y = y*50
 
+    # Hvis objektet printes til skærmen, returnere objektets navn
     def __str__(self):
         return self.__class__.__name__
 
+# Et fallback objekt, bruges når intet andet kan retuneres af objekter
 class none(csprite):
     def __init__(self):
         pass
@@ -102,6 +113,7 @@ class backgroundmenutile(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/background.png")
 
+# En ikke-solid vej, alle objekter med funktioner kan stå her
 class road(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/road.png")
@@ -110,20 +122,24 @@ class background(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/baggrund.png")
 
+# En solid væg, ingen kan bevæge sig igennem dette objekt
 class wall(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/wall.png")
         self.solid = True
 
+# En kiste, spilleren skal transporter dette objekt fra dets position til spawnpoint
 class chest(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/chest.png")
         self.solid = True
     
+    # Hvis spilleren bruger kisten, angiv at spilleren har samlet den op
     def use(self):
         player.goalpickup = True
         self.kill()
 
+# Dører spilleren kan åbne/lukke og gå igennem
 class door(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/door.png")
@@ -131,28 +147,32 @@ class door(csprite):
         self.opened = False
         self.solid = True
     
+    # tillader spileren at åbne døren hvis den er lukket, ellers luk døren hvis åben
     def use(self):
-        if(not self.opened):
-            self.open()
-        else:
-            self.close()
+        self.open() if(not self.opened) else self.close()
     
+    # Åbner døren så spilleren kan gå igennem
     def open(self):
         self.image = pygame.image.load("sprites/open_door.png")
         self.solid = False
         self.opened = True
-        
+    
+    # Luk døren så spilleren ikke kan gå igennem
     def close(self):
         self.image = pygame.image.load("sprites/door.png")
         self.solid = True
         self.opened = False
 
+# En fælde spilleren kan træde i som vil skade
+# Spilleren kan også disarmerer fælden ved at trykke 'e' foran to gange i træk
 class trap(csprite):
     def __init__(self,x,y):
         super().__init__(x,y, "sprites/road.png")
         self.solid = False
         self.visible = False
     
+    # Hvis spilleren træder i fælden, skad spilleren 
+    # Fryser spillerens position for en bestemt mængde tid
     def release(self):
         self.visible = True
         self.image = pygame.image.load("sprites/trap.png")
@@ -160,10 +180,12 @@ class trap(csprite):
         player.frozen = True
         time_exec.append({"start_time": pygame.time.get_ticks(), "delay": 1000, "func": self.destroy})
     
+    # Ødelægger fælden og optøger spilleren
     def destroy(self):
         player.frozen = False
         self.kill()
 
+    # Spilleren kan disarmerer fælden som vil fjerne den permanent
     def use(self):
         if(not self.visible):
             self.visible = True
@@ -181,11 +203,10 @@ class orc(csprite):
     
     # Bevæger ogren til et tilfældig område af otte fælder omkring sig hvor der er plads (vej)
     def move_random(self):
-        open_areas_around = drawmap.getblocksaround(self, road, returnobject=True, returnarray=True)
-        random_area = random.choice(open_areas_around)
-        entity_area = drawmap.getblockfield(random_area.rect.x/50, random_area.rect.y/50)
+        movement_blocks = drawmap.getblocksaround(self, road, returnobject=True, returnarray=True)
 
-        if(isinstance(entity_area, road)):
+        if(not len(movement_blocks) or random.randint(0,20)):
+            random_area = random.choice(movement_blocks)
             self.move_to(random_area.rect.x/50, random_area.rect.y/50)
 
     # Skader ogren
@@ -345,7 +366,6 @@ class map():
                     
                     if(entity_coord_new[0] >= 0 and entity_coord_new[1] >= 0):
                         entity_around = self.getblockfield(entity_coord_new[0], entity_coord_new[1])
-                        print(entity_coord_new)
                         
                         if(isinstance(entity_around, sprite2type)):
                             if(returnarray and returnobject):
