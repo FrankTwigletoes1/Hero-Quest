@@ -218,7 +218,7 @@ class orc(csprite):
 
         if(self.health <= 0):
             self.kill()
-    
+    #Player objektet, protagonisten i spillet
 class player(csprite):
     def __init__(self,x,y):
         super().__init__(x,y,"sprites/player1Down.png")
@@ -231,6 +231,8 @@ class player(csprite):
         self.spawnpoint = self.get_pos()
         self.goalpickup = False
 
+    #Bevægelse funktion som sørger tjekker om prøver at gå igennem en solid eller ej,
+    #Den har direction som input altså om den vil gå op eller ned ad y og frem eller tilbage på x
     def move(self, direction):
         image = pygame.image.load("sprites/player1Down.png")
         self.direction = direction
@@ -239,14 +241,14 @@ class player(csprite):
             front_sprite = drawmap.getblockfront(self, direction)
             collided = False
 
-            if direction == "right" and self.rect.x+50 < screensize[0]:
-                image = pygame.image.load("sprites/player1Right.png")
-                self.rect.x = self.rect.x+50
-                if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid:
+            if direction == "right" and self.rect.x+50 < screensize[0]: #Tjekker retningen og om den går ud over mappet
+                image = pygame.image.load("sprites/player1Right.png") #loader et nyt billede som peger i den rigtige retning
+                self.rect.x = self.rect.x+50 #Bevæger playeren
+                if pygame.sprite.collide_rect(self, front_sprite) and self.solid and front_sprite.solid: #Tjekker om den er gået ind i en solid block/tile
                     collided = True
-                    self.rect.x = self.rect.x-50
+                    self.rect.x = self.rect.x-50 # Hvis den colider så sætter den playeren tilbage på de tidligere koordinater
                 else:
-                    self.steps -= 1
+                    self.steps -= 1 # hvis den ikke var solid fjerner det en af stepsene
 
             elif direction == "left" and not self.rect.x-50 < 0:
                 image = pygame.image.load("sprites/player1Left.png")
@@ -278,7 +280,7 @@ class player(csprite):
             self.image = image
             self.image.set_colorkey((69,255,0))
             diceObjs[0].subtract(diceObjs[1].subtract()) if(not collided) else None
-
+    
     def checkSight(self, x_0, y_0, x_1, y_1):
         length = max(abs(x_1 - x_0), abs(y_1 - y_0))
         for i in range(0, length):
@@ -288,13 +290,15 @@ class player(csprite):
             y = round(y_0 * (1.0 * t) + y_1 * t)
             print(drawmap.getBlockField(x,y))
 
+    #Bliver kaldt af orkerne når playeren skal skades.
     def damage(self, damage):
         self.health -= damage
 
+        #Class som håndtere terningerne som kastes når playeren skal have nye skridt.
 class NumDice(csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
-    
+    #Bliver kaldet når playeren har bevæget sig og trækker et tal fra terningerne
     def subtract(self, dice=None):
         if(dice == None):
             if(self.nr > 0):
@@ -302,20 +306,20 @@ class NumDice(csprite):
                 self.image = (pygame.image.load("sprites/T_" + str(self.nr) + ".png") if(self.nr > 0) else pygame.image.load("sprites/T_start.png"))
                 return self
         return None
-
+    #Bliver kaldet når playeren ruller med movement terningerne for at give flere playersteps
     def T_move(self):
         self.nr = random.randint(1,6)
         self.image = pygame.image.load("sprites/T_" + str(self.nr) + ".png")
         
         return self.nr
-
+    #Angribsterningerne
 class Dice(csprite):
     def __init__(self, x, y):
         super().__init__(x,y,"sprites/T_start.png")
-
+    #Resetter terningerne til deres default billede
     def reset(self):
         self.image = pygame.image.load("sprites/T_start.png")
-
+    #Ruller terningnerne og returnere resultatet
     def roll(self):
         self.nr = random.randint(1,6)
         self.image = pygame.image.load("sprites/T_start.png")
@@ -330,8 +334,10 @@ class Dice(csprite):
             self.image = pygame.image.load("sprites/T_eveldeffet.png")
         
         return self.nr
-
+    #Objektet som står for map håndtering, altså indlæsning af map og hente data fra mappet
 class map():
+
+    #Læser mappet fra en fil, tilemap baseret
     def read(self, file):
         mapchars = []
         with open(file, "r") as f:
@@ -340,21 +346,23 @@ class map():
                     if each != " ":
                         mapchars.append(each)
         return mapchars
-
+    #Tjekker efter en sprite på et bestemt koordinat
     def getspritefromcoord(self, coord):
         sprite_list = [player_sprites, entity_sprites, middle_sprites, background_sprites]
-
+        #Går igennem alle sprite typerne
         for sprite_type in sprite_list:
+            #finder de individuelle sprites
             for sprite_individual in sprite_type.sprites():
-                if(sprite_individual.get_pos() == coord):
+                if(sprite_individual.get_pos() == coord): # hvis spriten er på de bestemer koordinater så returner spriten
                     return sprite_individual
         
         return none()
-
+    #Finder sprite på bestemt x og y koordinat i stedet for at tjekke alle koordinater ligesom getspritefromcoord
     def getblockfield(self, x, y):
         return self.getspritefromcoord(int(y * 20 + x))
     
     # form (0=around, 1=cross)
+    #Finder alle blocks i enten en radius af 1 med blocks på tværs eller i et kryds.
     def getblocksaround(self, sprite1, sprite2type, radius=1, returnobject=False, returnarray=False, form=0):
         entity_array = []
         form_cross_disallowed = [(-1,-1),(1,1),(-1,1),(1,-1)]
@@ -375,7 +383,7 @@ class map():
                                 return (True if(not returnobject) else entity_around)
         
         return entity_array
-
+    #pladsere tilemappet/alle blocks på mappet
     def assignblocks(self):
         global player
         global doorObjs
@@ -395,7 +403,7 @@ class map():
         doorNum = 0
         diceNum = 0
         trapNum = 0
-
+        
         for y in range(20):
             for x in range(20):
 
